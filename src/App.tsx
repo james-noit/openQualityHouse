@@ -1731,7 +1731,9 @@ function App() {
                             <button
                               type="button"
                               className="icon-button rating-button"
-                              onClick={() => updateNeed(need.id, 'importance', need.importance - 1)}
+                              onClick={() =>
+                                updateNeed(need.id, 'importance', Number(need.importance) - 1)
+                              }
                               disabled={need.importance <= 1}
                               aria-label={`${copy.decrease} ${copy.importance}`}
                             >
@@ -1743,7 +1745,9 @@ function App() {
                             <button
                               type="button"
                               className="icon-button rating-button"
-                              onClick={() => updateNeed(need.id, 'importance', need.importance + 1)}
+                              onClick={() =>
+                                updateNeed(need.id, 'importance', Number(need.importance) + 1)
+                              }
                               disabled={need.importance >= 5}
                               aria-label={`${copy.increase} ${copy.importance}`}
                             >

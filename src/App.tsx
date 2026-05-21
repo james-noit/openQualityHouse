@@ -85,7 +85,7 @@ type ExportedHouseFile = HouseDraft & {
 const STORAGE_KEY = 'open-quality-house-state'
 const relationshipCycle: RelationshipStrength[] = [0, 1, 3, 9]
 const roofCycle: CorrelationStrength[] = [0, 1, 2, -1, -2]
-const UNDO_REDO_HISTORY_LIMIT = 20
+const MAX_HISTORY_LENGTH = 20
 let fallbackIdCounter = 0
 
 const translations = {
@@ -409,6 +409,11 @@ function coerceCorrelation(value: number): CorrelationStrength {
   return roofCycle.includes(value as CorrelationStrength) ? (value as CorrelationStrength) : 0
 }
 
+/**
+ * Normalizes imported or user-provided ratings to the supported 1-5 scale.
+ * When the input is missing or invalid, the function falls back to 1 so the
+ * matrix remains valid and never stores empty or NaN values.
+ */
 function normalizeRating(value: number | undefined) {
   if (value === undefined) {
     return 1
@@ -909,7 +914,7 @@ function App() {
 
     if (!skipHistoryTracking) {
       setUndoStack((previous) => [
-        ...previous.slice(-(UNDO_REDO_HISTORY_LIMIT - 1)),
+        ...previous.slice(-(MAX_HISTORY_LENGTH - 1)),
         cloneBoardState(current),
       ])
       setRedoStack([])
@@ -1038,7 +1043,7 @@ function App() {
       }
 
       setRedoStack((redoHistory) => [
-        ...redoHistory.slice(-(UNDO_REDO_HISTORY_LIMIT - 1)),
+        ...redoHistory.slice(-(MAX_HISTORY_LENGTH - 1)),
         cloneBoardState(boardRef.current),
       ])
       setBoard(cloneBoardState(priorState))
@@ -1055,7 +1060,7 @@ function App() {
       }
 
       setUndoStack((undoHistory) => [
-        ...undoHistory.slice(-(UNDO_REDO_HISTORY_LIMIT - 1)),
+        ...undoHistory.slice(-(MAX_HISTORY_LENGTH - 1)),
         cloneBoardState(boardRef.current),
       ])
       setBoard(cloneBoardState(nextState))
@@ -1108,11 +1113,11 @@ function App() {
       content: chatInput.trim(),
     }
 
-    const currentMessages = chatMessagesRef.current
+    const messageHistory = chatMessagesRef.current
     setChatMessages((current) => [...current, userMessage])
 
     try {
-      const request = getProviderRequest(aiConfig, chatInput.trim(), currentMessages)
+      const request = getProviderRequest(aiConfig, chatInput.trim(), messageHistory)
       const response = await fetch(request.url, request.options)
       const responseText = await request.extractText(response)
       const assistantMessage: ChatMessage = {

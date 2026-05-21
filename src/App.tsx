@@ -907,6 +907,8 @@ function App() {
   const [activeHelp, setActiveHelp] = useState<HelpTopic | null>(null)
   const [helpPopoverPosition, setHelpPopoverPosition] = useState<{ top: number; right: number } | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const editorModalRef = useRef<HTMLDivElement | null>(null)
+  const aiModalRef = useRef<HTMLDivElement | null>(null)
   const boardRef = useRef(board)
   const chatMessagesRef = useRef(chatMessages)
   const copy = translations[language]
@@ -932,6 +934,94 @@ function App() {
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
   }, [aiConfig, board, chatMessages, language])
+
+  useEffect(() => {
+    const modal = editorModalRef.current
+    if (!isEditorOpen || !modal) return
+
+    const saved = document.activeElement as HTMLElement | null
+
+    const getFocusable = (): HTMLElement[] =>
+      Array.from(
+        modal.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      )
+
+    getFocusable()[0]?.focus()
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsEditorOpen(false)
+        return
+      }
+      if (event.key !== 'Tab') return
+
+      const items = getFocusable()
+      if (items.length === 0) return
+
+      const first = items[0]
+      const last = items[items.length - 1]
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      saved?.focus()
+    }
+  }, [isEditorOpen])
+
+  useEffect(() => {
+    const modal = aiModalRef.current
+    if (!isAiModalOpen || !modal) return
+
+    const saved = document.activeElement as HTMLElement | null
+
+    const getFocusable = (): HTMLElement[] =>
+      Array.from(
+        modal.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      )
+
+    getFocusable()[0]?.focus()
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsAiModalOpen(false)
+        return
+      }
+      if (event.key !== 'Tab') return
+
+      const items = getFocusable()
+      if (items.length === 0) return
+
+      const first = items[0]
+      const last = items[items.length - 1]
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      saved?.focus()
+    }
+  }, [isAiModalOpen])
 
   const weightedScores = useMemo(() => {
     return technicalRequirements.reduce<Record<string, number>>((scores, requirement) => {
@@ -1519,6 +1609,7 @@ function App() {
           onKeyDown={isMainLocked ? undefined : createSectionKeyHandler('needs')}
           role={isMainLocked ? undefined : 'button'}
           tabIndex={isMainLocked ? -1 : 0}
+          aria-label={isMainLocked ? undefined : `${copy.matrixTitle}: ${copy.editHouse}`}
         >
           <div className="section-header">
             <div>
@@ -1546,17 +1637,17 @@ function App() {
             <table className="matrix-table">
               <thead>
                 <tr>
-                  <th>{copy.customerNeeds}</th>
+                  <th scope="col">{copy.customerNeeds}</th>
                   {technicalRequirements.map((requirement) => (
-                    <th key={requirement.id}>{requirement.name}</th>
+                    <th key={requirement.id} scope="col">{requirement.name}</th>
                   ))}
-                  <th>{copy.importance}</th>
+                  <th scope="col">{copy.importance}</th>
                 </tr>
               </thead>
               <tbody>
                 {customerNeeds.map((need) => (
                   <tr key={need.id} className="matrix-data-row">
-                    <th>{need.name}</th>
+                    <th scope="row">{need.name}</th>
                     {technicalRequirements.map((requirement) => {
                       const key = relationshipKey(need.id, requirement.id)
                       const value = matrix[key] ?? 0
@@ -1584,7 +1675,7 @@ function App() {
               </tbody>
               <tfoot>
                 <tr className="weighted-row">
-                  <th className="weighted-label">{copy.weightedOpportunity}</th>
+                  <th scope="row" className="weighted-label">{copy.weightedOpportunity}</th>
                   {technicalRequirements.map((requirement) => (
                     <td key={requirement.id} className="weighted-value">
                       {weightedScores[requirement.id] ?? 0}
@@ -1603,6 +1694,7 @@ function App() {
           onKeyDown={isMainLocked ? undefined : createSectionKeyHandler('requirements')}
           role={isMainLocked ? undefined : 'button'}
           tabIndex={isMainLocked ? -1 : 0}
+          aria-label={isMainLocked ? undefined : `${copy.roofTitle}: ${copy.editHouse}`}
         >
           <div className="section-header">
             <div>
@@ -1630,16 +1722,16 @@ function App() {
             <table className="roof-table">
               <thead>
                 <tr>
-                  <th></th>
+                  <th scope="col"></th>
                   {technicalRequirements.map((requirement) => (
-                    <th key={`roof-head-${requirement.id}`}>{requirement.name}</th>
+                    <th key={`roof-head-${requirement.id}`} scope="col">{requirement.name}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {technicalRequirements.map((leftRequirement, rowIndex) => (
                   <tr key={`roof-row-${leftRequirement.id}`} className="roof-data-row">
-                    <th>{leftRequirement.name}</th>
+                    <th scope="row">{leftRequirement.name}</th>
                     {technicalRequirements.map((rightRequirement, columnIndex) => {
                       if (columnIndex <= rowIndex) {
                         return <td key={rightRequirement.id} className="roof-empty" />
@@ -1679,17 +1771,18 @@ function App() {
         <div className="modal-overlay" role="presentation" onClick={() => setIsEditorOpen(false)}>
           <div
             className="modal card editor-modal"
+            ref={editorModalRef}
             role="dialog"
             aria-modal="true"
-            aria-label={copy.editHouse}
+            aria-labelledby="editor-dialog-title"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="modal-header">
               <div>
                 <p className="eyebrow">{copy.mainEyebrow}</p>
-                <h2>{copy.editHouse}</h2>
+                <h2 id="editor-dialog-title">{copy.editHouse}</h2>
               </div>
-              <button type="button" className="ghost-button" onClick={() => setIsEditorOpen(false)}>
+              <button type="button" className="ghost-button" onClick={() => setIsEditorOpen(false)} aria-label={copy.close}>
                 {copy.close}
               </button>
             </div>
@@ -1702,6 +1795,7 @@ function App() {
                     type="button"
                     className={`step-pill ${editorStep === step ? 'active' : ''}`}
                     onClick={() => setEditorStep(step)}
+                    aria-current={editorStep === step ? 'step' : undefined}
                   >
                     {editorStepLabels[step]}
                   </button>
@@ -1800,6 +1894,7 @@ function App() {
                           className="icon-button"
                           onClick={() => removeCustomerNeed(need.id)}
                           disabled={customerNeeds.length === 1}
+                          aria-label={`${copy.remove} ${need.name}`}
                         >
                           {copy.remove}
                         </button>
@@ -1837,25 +1932,48 @@ function App() {
                         </label>
                         <label className="compact-field">
                           {copy.difficulty}
-                          <input
-                            type="number"
-                            min="1"
-                            max="5"
-                            value={requirement.difficulty}
-                            onChange={(event) =>
-                              updateTechnicalRequirement(
-                                requirement.id,
-                                'difficulty',
-                                event.target.value,
-                              )
-                            }
-                          />
+                          <div className="rating-control" role="group" aria-label={`${copy.difficulty} ${requirement.name}`}>
+                            <button
+                              type="button"
+                              className="icon-button rating-button"
+                              onClick={() =>
+                                updateTechnicalRequirement(
+                                  requirement.id,
+                                  'difficulty',
+                                  requirement.difficulty - 1,
+                                )
+                              }
+                              disabled={requirement.difficulty <= 1}
+                              aria-label={`${copy.decrease} ${copy.difficulty}`}
+                            >
+                              −
+                            </button>
+                            <span className="rating-value" aria-live="polite">
+                              {requirement.difficulty}
+                            </span>
+                            <button
+                              type="button"
+                              className="icon-button rating-button"
+                              onClick={() =>
+                                updateTechnicalRequirement(
+                                  requirement.id,
+                                  'difficulty',
+                                  requirement.difficulty + 1,
+                                )
+                              }
+                              disabled={requirement.difficulty >= 5}
+                              aria-label={`${copy.increase} ${copy.difficulty}`}
+                            >
+                              +
+                            </button>
+                          </div>
                         </label>
                         <button
                           type="button"
                           className="icon-button"
                           onClick={() => removeTechnicalRequirement(requirement.id)}
                           disabled={technicalRequirements.length === 1}
+                          aria-label={`${copy.remove} ${requirement.name}`}
                         >
                           {copy.remove}
                         </button>
@@ -1874,16 +1992,16 @@ function App() {
                       <table className="matrix-table compact-matrix-table">
                         <thead>
                           <tr>
-                            <th>{copy.customerNeeds}</th>
+                            <th scope="col">{copy.customerNeeds}</th>
                             {technicalRequirements.map((requirement) => (
-                              <th key={`editor-${requirement.id}`}>{requirement.name}</th>
+                              <th key={`editor-${requirement.id}`} scope="col">{requirement.name}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {customerNeeds.map((need) => (
                             <tr key={`editor-row-${need.id}`}>
-                              <th>{need.name}</th>
+                              <th scope="row">{need.name}</th>
                               {technicalRequirements.map((requirement) => {
                                 const key = relationshipKey(need.id, requirement.id)
                                 const value = matrix[key] ?? 0
@@ -1894,6 +2012,7 @@ function App() {
                                       type="button"
                                       className={`matrix-cell strength-${value}`}
                                       onClick={() => cycleRelationship(need.id, requirement.id)}
+                                      aria-label={`Relationship between ${need.name} and ${requirement.name}: ${value}`}
                                     >
                                       {value}
                                     </button>
@@ -1918,16 +2037,16 @@ function App() {
                       <table className="roof-table compact-matrix-table">
                         <thead>
                           <tr>
-                            <th></th>
+                            <th scope="col"></th>
                             {technicalRequirements.map((requirement) => (
-                              <th key={`editor-roof-head-${requirement.id}`}>{requirement.name}</th>
+                              <th key={`editor-roof-head-${requirement.id}`} scope="col">{requirement.name}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {technicalRequirements.map((leftRequirement, rowIndex) => (
                             <tr key={`editor-roof-row-${leftRequirement.id}`}>
-                              <th>{leftRequirement.name}</th>
+                              <th scope="row">{leftRequirement.name}</th>
                               {technicalRequirements.map((rightRequirement, columnIndex) => {
                                 if (columnIndex <= rowIndex) {
                                   return <td key={rightRequirement.id} className="roof-empty" />
@@ -1952,6 +2071,7 @@ function App() {
                                       type="button"
                                       className={`matrix-cell roof strength-${value}`}
                                       onClick={() => cycleRoof(leftRequirement.id, rightRequirement.id)}
+                                      aria-label={`Correlation between ${leftRequirement.name} and ${rightRequirement.name}: ${label}`}
                                     >
                                       {label}
                                     </button>
@@ -2038,8 +2158,8 @@ function App() {
               />
             </label>
 
-            {assistantStatus ? <p className="status-message success">{assistantStatus}</p> : null}
-            {assistantError ? <p className="status-message error">{assistantError}</p> : null}
+            {assistantStatus ? <p className="status-message success" role="status">{assistantStatus}</p> : null}
+            {assistantError ? <p className="status-message error" role="alert">{assistantError}</p> : null}
 
             <button type="submit" className="primary-button full-width">
               {copy.generateDraft}
@@ -2052,18 +2172,19 @@ function App() {
         <div className="modal-overlay" role="presentation" onClick={() => setIsAiModalOpen(false)}>
           <div
             className="modal card ai-modal"
+            ref={aiModalRef}
             role="dialog"
             aria-modal="true"
-            aria-label={copy.aiTitle}
+            aria-labelledby="ai-dialog-title"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="modal-header">
               <div>
                 <p className="eyebrow">{copy.ai}</p>
-                <h2>{copy.aiTitle}</h2>
+                <h2 id="ai-dialog-title">{copy.aiTitle}</h2>
                 <p className="helper-copy">{copy.aiDescription}</p>
               </div>
-              <button type="button" className="ghost-button" onClick={() => setIsAiModalOpen(false)}>
+              <button type="button" className="ghost-button" onClick={() => setIsAiModalOpen(false)} aria-label={copy.close}>
                 {copy.close}
               </button>
             </div>

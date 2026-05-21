@@ -85,7 +85,7 @@ type ExportedHouseFile = HouseDraft & {
 const STORAGE_KEY = 'open-quality-house-state'
 const relationshipCycle: RelationshipStrength[] = [0, 1, 3, 9]
 const roofCycle: CorrelationStrength[] = [0, 1, 2, -1, -2]
-const historyLimit = 20
+const HISTORY_LIMIT = 20
 let fallbackIdCounter = 0
 
 const translations = {
@@ -886,7 +886,7 @@ function App() {
     }
 
     if (!skipHistory) {
-      setUndoStack((previous) => [...previous.slice(-(historyLimit - 1)), cloneBoardState(current)])
+      setUndoStack((previous) => [...previous.slice(-(HISTORY_LIMIT - 1)), cloneBoardState(current)])
       setRedoStack([])
     }
 
@@ -1013,7 +1013,7 @@ function App() {
       }
 
       setRedoStack((redoHistory) => [
-        ...redoHistory.slice(-(historyLimit - 1)),
+        ...redoHistory.slice(-(HISTORY_LIMIT - 1)),
         cloneBoardState(boardRef.current),
       ])
       setBoard(cloneBoardState(priorState))
@@ -1030,7 +1030,7 @@ function App() {
       }
 
       setUndoStack((undoHistory) => [
-        ...undoHistory.slice(-(historyLimit - 1)),
+        ...undoHistory.slice(-(HISTORY_LIMIT - 1)),
         cloneBoardState(boardRef.current),
       ])
       setBoard(cloneBoardState(nextState))
@@ -1083,8 +1083,7 @@ function App() {
       content: chatInput.trim(),
     }
 
-    const history = [...chatMessages, userMessage]
-    setChatMessages(history)
+    setChatMessages([...chatMessages, userMessage])
 
     try {
       const request = getProviderRequest(aiConfig, chatInput.trim(), chatMessages)

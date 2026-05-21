@@ -976,14 +976,28 @@ function App() {
     setBoard(cloneBoardState(next))
   }
 
-  function updateNeed(id: string, field: 'name' | 'importance', value: string | number) {
+  function updateNeedName(id: string, value: string) {
     commitBoard((current) => ({
       ...current,
       customerNeeds: current.customerNeeds.map((need) =>
         need.id === id
           ? {
               ...need,
-              [field]: field === 'importance' ? normalizeRating(Number(value)) : value,
+              name: value,
+            }
+          : need,
+      ),
+    }))
+  }
+
+  function updateNeedImportance(id: string, value: number) {
+    commitBoard((current) => ({
+      ...current,
+      customerNeeds: current.customerNeeds.map((need) =>
+        need.id === id
+          ? {
+              ...need,
+              importance: normalizeRating(value),
             }
           : need,
       ),
@@ -1722,7 +1736,7 @@ function App() {
                           {copy.needName}
                           <input
                             value={need.name}
-                            onChange={(event) => updateNeed(need.id, 'name', event.target.value)}
+                            onChange={(event) => updateNeedName(need.id, event.target.value)}
                           />
                         </label>
                         <label className="compact-field">
@@ -1731,9 +1745,7 @@ function App() {
                             <button
                               type="button"
                               className="icon-button rating-button"
-                              onClick={() =>
-                                updateNeed(need.id, 'importance', Number(need.importance) - 1)
-                              }
+                              onClick={() => updateNeedImportance(need.id, need.importance - 1)}
                               disabled={need.importance <= 1}
                               aria-label={`${copy.decrease} ${copy.importance}`}
                             >
@@ -1745,9 +1757,7 @@ function App() {
                             <button
                               type="button"
                               className="icon-button rating-button"
-                              onClick={() =>
-                                updateNeed(need.id, 'importance', Number(need.importance) + 1)
-                              }
+                              onClick={() => updateNeedImportance(need.id, need.importance + 1)}
                               disabled={need.importance >= 5}
                               aria-label={`${copy.increase} ${copy.importance}`}
                             >

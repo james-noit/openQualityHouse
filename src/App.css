@@ -434,6 +434,27 @@
   min-width: 6.5rem;
 }
 
+.rating-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.rating-button {
+  width: 2rem;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 1rem;
+}
+
+.rating-value {
+  min-width: 1.4rem;
+  text-align: center;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
 label {
   display: flex;
   flex-direction: column;
@@ -795,13 +816,17 @@ textarea {
     display: inline;
   }
 
-  .item-row,
+  .item-row {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
   .section-header,
   .compact-header,
   .modal-header,
   .modal-footer {
-    display: grid;
-    grid-template-columns: 1fr;
+    flex-wrap: wrap;
+    align-items: center;
   }
 
   .matrix-table,

@@ -155,6 +155,8 @@ const translations = {
     addNeed: 'Add need',
     addResponse: 'Add response',
     remove: 'Remove',
+    decrease: 'Decrease',
+    increase: 'Increase',
     needName: 'Customer need',
     responseName: 'Technical response',
     relationshipGuide: 'Score how strongly each response supports a need.',
@@ -252,6 +254,8 @@ const translations = {
     addNeed: 'Agregar necesidad',
     addResponse: 'Agregar respuesta',
     remove: 'Eliminar',
+    decrease: 'Disminuir',
+    increase: 'Aumentar',
     needName: 'Necesidad del cliente',
     responseName: 'Respuesta técnica',
     relationshipGuide: 'Puntúa cuánto ayuda cada respuesta a una necesidad.',
@@ -1723,13 +1727,29 @@ function App() {
                         </label>
                         <label className="compact-field">
                           {copy.importance}
-                          <input
-                            type="number"
-                            min="1"
-                            max="5"
-                            value={need.importance}
-                            onChange={(event) => updateNeed(need.id, 'importance', event.target.value)}
-                          />
+                          <div className="rating-control" role="group" aria-label={`${copy.importance} ${need.name}`}>
+                            <button
+                              type="button"
+                              className="icon-button rating-button"
+                              onClick={() => updateNeed(need.id, 'importance', need.importance - 1)}
+                              disabled={need.importance <= 1}
+                              aria-label={`${copy.decrease} ${copy.importance}`}
+                            >
+                              −
+                            </button>
+                            <span className="rating-value" aria-live="polite">
+                              {need.importance}
+                            </span>
+                            <button
+                              type="button"
+                              className="icon-button rating-button"
+                              onClick={() => updateNeed(need.id, 'importance', need.importance + 1)}
+                              disabled={need.importance >= 5}
+                              aria-label={`${copy.increase} ${copy.importance}`}
+                            >
+                              +
+                            </button>
+                          </div>
                         </label>
                         <button
                           type="button"

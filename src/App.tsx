@@ -1194,6 +1194,20 @@ function App() {
     })
   }
 
+  function createSectionKeyHandler(step: EditorStep) {
+    return (event: React.KeyboardEvent<HTMLElement>) => {
+      if (event.key === ' ') {
+        event.preventDefault()
+      }
+
+      if (event.key !== 'Enter' && event.key !== ' ') {
+        return
+      }
+
+      openEditorAt(step)
+    }
+  }
+
   function exportBoard() {
     const payload = createExportPayload(boardRef.current)
     const fileName = `${slugifyFileName(boardRef.current.projectTitle)}.houseofquality.json`
@@ -1400,20 +1414,7 @@ function App() {
         <article
           className={`card section-card compact-section-card house-section ${isMainLocked ? 'section-locked' : 'clickable-section'}`}
           onClick={isMainLocked ? undefined : () => openEditorAt('needs')}
-          onKeyDown={
-            isMainLocked
-              ? undefined
-              : (event) => {
-                  if (event.key === ' ') {
-                    event.preventDefault()
-                  }
-
-                  if (event.key !== 'Enter' && event.key !== ' ') {
-                    return
-                  }
-                  openEditorAt('needs')
-                }
-          }
+          onKeyDown={isMainLocked ? undefined : createSectionKeyHandler('needs')}
           role={isMainLocked ? undefined : 'button'}
           tabIndex={isMainLocked ? -1 : 0}
         >
@@ -1512,20 +1513,7 @@ function App() {
         <article
           className={`card section-card compact-section-card roof-section ${isMainLocked ? 'section-locked' : 'clickable-section'}`}
           onClick={isMainLocked ? undefined : () => openEditorAt('requirements')}
-          onKeyDown={
-            isMainLocked
-              ? undefined
-              : (event) => {
-                  if (event.key === ' ') {
-                    event.preventDefault()
-                  }
-
-                  if (event.key !== 'Enter' && event.key !== ' ') {
-                    return
-                  }
-                  openEditorAt('requirements')
-                }
-          }
+          onKeyDown={isMainLocked ? undefined : createSectionKeyHandler('requirements')}
           role={isMainLocked ? undefined : 'button'}
           tabIndex={isMainLocked ? -1 : 0}
         >

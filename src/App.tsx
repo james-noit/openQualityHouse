@@ -99,6 +99,8 @@ const translations = {
     undo: 'Undo',
     redo: 'Redo',
     ai: 'AI',
+    lock: 'Lock',
+    unlock: 'Unlock',
     menu: 'Menu',
     language: 'Language',
     english: 'English',
@@ -113,9 +115,15 @@ const translations = {
     matrixTitle: 'Relationship matrix',
     matrixHelper: 'Click cells to cycle 0 → 1 → 3 → 9.',
     houseLabel: 'House',
+    houseHelpTitle: 'House section objective',
+    houseHelpText:
+      'Capture customer needs, then map how strongly each technical response supports those needs. Start with critical needs and assign relationships consistently.',
     roofTitle: 'Technical correlations',
     roofHelper: 'Click cells to cycle 0 → + → ++ → − → −−.',
     roofLabel: 'Roof',
+    roofHelpTitle: 'Roof section objective',
+    roofHelpText:
+      'Identify interactions between technical responses. Positive links reinforce outcomes and negative links reveal tradeoffs that need mitigation.',
     importance: 'Importance',
     difficulty: 'Difficulty',
     projectBrief: 'Project brief',
@@ -176,6 +184,8 @@ const translations = {
     undo: 'Deshacer',
     redo: 'Rehacer',
     ai: 'IA',
+    lock: 'Bloquear',
+    unlock: 'Desbloquear',
     menu: 'Menú',
     language: 'Idioma',
     english: 'Inglés',
@@ -190,9 +200,15 @@ const translations = {
     matrixTitle: 'Matriz de relaciones',
     matrixHelper: 'Haz clic en las celdas para alternar 0 → 1 → 3 → 9.',
     houseLabel: 'Casa',
+    houseHelpTitle: 'Objetivo de la sección Casa',
+    houseHelpText:
+      'Define las necesidades del cliente y luego relaciona qué tan bien cada respuesta técnica las satisface. Empieza por las necesidades más críticas.',
     roofTitle: 'Correlaciones técnicas',
     roofHelper: 'Haz clic en las celdas para alternar 0 → + → ++ → − → −−.',
     roofLabel: 'Techo',
+    roofHelpTitle: 'Objetivo de la sección Techo',
+    roofHelpText:
+      'Registra cómo interactúan las respuestas técnicas entre sí. Las relaciones positivas refuerzan resultados y las negativas muestran compensaciones.',
     importance: 'Importancia',
     difficulty: 'Dificultad',
     projectBrief: 'Resumen del proyecto',
@@ -857,6 +873,8 @@ function App() {
   const [fileMenuOpen, setFileMenuOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [editorStep, setEditorStep] = useState<EditorStep>('brief')
+  const [mainLocked, setMainLocked] = useState(false)
+  const [activeHelp, setActiveHelp] = useState<'house' | 'roof' | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const boardRef = useRef(board)
   const chatMessagesRef = useRef(chatMessages)
@@ -971,6 +989,14 @@ function App() {
     }))
   }
 
+  function addCustomerNeedFromMain() {
+    if (mainLocked) {
+      return
+    }
+
+    addCustomerNeed()
+  }
+
   function addTechnicalRequirement() {
     commitBoard((current) => ({
       ...current,
@@ -983,6 +1009,14 @@ function App() {
         },
       ],
     }))
+  }
+
+  function addTechnicalRequirementFromMain() {
+    if (mainLocked) {
+      return
+    }
+
+    addTechnicalRequirement()
   }
 
   function removeCustomerNeed(id: string) {
@@ -1019,6 +1053,10 @@ function App() {
   }
 
   function cycleRelationship(customerNeedId: string, technicalRequirementId: string) {
+    if (mainLocked) {
+      return
+    }
+
     const key = relationshipKey(customerNeedId, technicalRequirementId)
     commitBoard((current) => ({
       ...current,
@@ -1030,6 +1068,10 @@ function App() {
   }
 
   function cycleRoof(leftId: string, rightId: string) {
+    if (mainLocked) {
+      return
+    }
+
     const key = roofKey(leftId, rightId)
     commitBoard((current) => ({
       ...current,
@@ -1157,6 +1199,15 @@ function App() {
     }))
   }
 
+  function openEditorAt(step: EditorStep) {
+    if (mainLocked) {
+      return
+    }
+
+    setEditorStep(step)
+    setIsEditorOpen(true)
+  }
+
   function exportBoard() {
     const payload = createExportPayload(boardRef.current)
     const fileName = `${slugifyFileName(boardRef.current.projectTitle)}.houseofquality.json`
@@ -1278,6 +1329,15 @@ function App() {
           <span aria-hidden="true">✨</span>
           <span className="button-label">{copy.ai}</span>
         </button>
+        <button
+          type="button"
+          className={`toolbar-button ${mainLocked ? 'active-control' : ''}`}
+          onClick={() => setMainLocked((current) => !current)}
+          aria-pressed={mainLocked}
+        >
+          <span aria-hidden="true">{mainLocked ? '🔒' : '🔓'}</span>
+          <span className="button-label">{mainLocked ? copy.unlock : copy.lock}</span>
+        </button>
       </>
     )
   }
@@ -1302,30 +1362,30 @@ function App() {
             </button>
             {mobileMenuOpen ? <div className="toolbar-menu mobile-menu">{renderToolbarActions(true)}</div> : null}
           </div>
+        </div>
 
-          <div className="language-picker" role="group" aria-label={copy.language}>
-            <span className="language-icon" aria-hidden="true">
-              🌐
-            </span>
-            <button
-              type="button"
-              className={`language-chip ${language === 'en' ? 'active' : ''}`}
-              onClick={() => setLanguage('en')}
-              aria-label={copy.english}
-            >
-              <span aria-hidden="true">🇬🇧</span>
-              <span className="language-label">{copy.english}</span>
-            </button>
-            <button
-              type="button"
-              className={`language-chip ${language === 'es' ? 'active' : ''}`}
-              onClick={() => setLanguage('es')}
-              aria-label={copy.spanish}
-            >
-              <span aria-hidden="true">🇪🇸</span>
-              <span className="language-label">{copy.spanish}</span>
-            </button>
-          </div>
+        <div className="language-picker" role="group" aria-label={copy.language}>
+          <span className="language-icon" aria-hidden="true">
+            🌐
+          </span>
+          <button
+            type="button"
+            className={`language-chip ${language === 'en' ? 'active' : ''}`}
+            onClick={() => setLanguage('en')}
+            aria-label={copy.english}
+          >
+            <span aria-hidden="true">🇬🇧</span>
+            <span className="language-label">{copy.english}</span>
+          </button>
+          <button
+            type="button"
+            className={`language-chip ${language === 'es' ? 'active' : ''}`}
+            onClick={() => setLanguage('es')}
+            aria-label={copy.spanish}
+          >
+            <span aria-hidden="true">🇪🇸</span>
+            <span className="language-label">{copy.spanish}</span>
+          </button>
         </div>
       </header>
 
@@ -1351,14 +1411,57 @@ function App() {
           </button>
         </section>
 
-        <article className="card section-card compact-section-card house-section">
+        <article
+          className={`card section-card compact-section-card house-section ${mainLocked ? 'section-locked' : 'clickable-section'}`}
+          onClick={() => openEditorAt('needs')}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              openEditorAt('needs')
+            }
+          }}
+          role="button"
+          tabIndex={0}
+        >
           <div className="section-header">
             <div>
               <p className="section-tag">{copy.houseLabel}</p>
               <h2>{copy.matrixTitle}</h2>
             </div>
-            <p className="helper-copy">{copy.matrixHelper}</p>
+            <div className="section-controls">
+              <button
+                type="button"
+                className="icon-button section-control"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  addCustomerNeedFromMain()
+                }}
+                disabled={mainLocked}
+                aria-label={copy.addNeed}
+              >
+                +
+              </button>
+              <button
+                type="button"
+                className={`icon-button section-control ${activeHelp === 'house' ? 'active-control' : ''}`}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setActiveHelp((current) => (current === 'house' ? null : 'house'))
+                }}
+                aria-expanded={activeHelp === 'house'}
+                aria-label={copy.houseHelpTitle}
+              >
+                ?
+              </button>
+            </div>
           </div>
+          <p className="helper-copy">{copy.matrixHelper}</p>
+          {activeHelp === 'house' ? (
+            <aside className="section-help">
+              <strong>{copy.houseHelpTitle}</strong>
+              <p>{copy.houseHelpText}</p>
+            </aside>
+          ) : null}
           <div className="table-scroll">
             <table className="matrix-table">
               <thead>
@@ -1380,14 +1483,18 @@ function App() {
 
                       return (
                         <td key={key}>
-                          <button
-                            type="button"
-                            className={`matrix-cell strength-${value}`}
-                            onClick={() => cycleRelationship(need.id, requirement.id)}
-                            aria-label={`Relationship between ${need.name} and ${requirement.name}: ${value}`}
-                          >
-                            {value}
-                          </button>
+                            <button
+                              type="button"
+                              className={`matrix-cell strength-${value}`}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                cycleRelationship(need.id, requirement.id)
+                              }}
+                              aria-label={`Relationship between ${need.name} and ${requirement.name}: ${value}`}
+                              disabled={mainLocked}
+                            >
+                              {value}
+                            </button>
                         </td>
                       )
                     })}
@@ -1408,14 +1515,57 @@ function App() {
           </div>
         </article>
 
-        <article className="card section-card compact-section-card roof-section">
+        <article
+          className={`card section-card compact-section-card roof-section ${mainLocked ? 'section-locked' : 'clickable-section'}`}
+          onClick={() => openEditorAt('requirements')}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              openEditorAt('requirements')
+            }
+          }}
+          role="button"
+          tabIndex={0}
+        >
           <div className="section-header">
             <div>
               <p className="section-tag">{copy.roofLabel}</p>
               <h2>{copy.roofTitle}</h2>
             </div>
-            <p className="helper-copy">{copy.roofHelper}</p>
+            <div className="section-controls">
+              <button
+                type="button"
+                className="icon-button section-control"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  addTechnicalRequirementFromMain()
+                }}
+                disabled={mainLocked}
+                aria-label={copy.addResponse}
+              >
+                +
+              </button>
+              <button
+                type="button"
+                className={`icon-button section-control ${activeHelp === 'roof' ? 'active-control' : ''}`}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setActiveHelp((current) => (current === 'roof' ? null : 'roof'))
+                }}
+                aria-expanded={activeHelp === 'roof'}
+                aria-label={copy.roofHelpTitle}
+              >
+                ?
+              </button>
+            </div>
           </div>
+          <p className="helper-copy">{copy.roofHelper}</p>
+          {activeHelp === 'roof' ? (
+            <aside className="section-help">
+              <strong>{copy.roofHelpTitle}</strong>
+              <p>{copy.roofHelpText}</p>
+            </aside>
+          ) : null}
           <div className="table-scroll">
             <table className="roof-table">
               <thead>
@@ -1442,14 +1592,18 @@ function App() {
 
                       return (
                         <td key={key}>
-                          <button
-                            type="button"
-                            className={`matrix-cell roof strength-${value}`}
-                            onClick={() => cycleRoof(leftRequirement.id, rightRequirement.id)}
-                            aria-label={`Correlation between ${leftRequirement.name} and ${rightRequirement.name}: ${label}`}
-                          >
-                            {label}
-                          </button>
+                           <button
+                             type="button"
+                             className={`matrix-cell roof strength-${value}`}
+                             onClick={(event) => {
+                               event.stopPropagation()
+                               cycleRoof(leftRequirement.id, rightRequirement.id)
+                             }}
+                             aria-label={`Correlation between ${leftRequirement.name} and ${rightRequirement.name}: ${label}`}
+                             disabled={mainLocked}
+                           >
+                             {label}
+                           </button>
                         </td>
                       )
                     })}

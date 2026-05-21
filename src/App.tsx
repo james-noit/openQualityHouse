@@ -76,6 +76,7 @@ type SavedState = BoardState & {
 }
 
 type EditorStep = 'brief' | 'needs' | 'requirements' | 'matrix'
+type HelpTopic = 'house' | 'roof' | 'needs' | 'requirements' | 'matrix' | 'correlations'
 
 type ExportedHouseFile = HouseDraft & {
   format: 'open-quality-house'
@@ -118,12 +119,24 @@ const translations = {
     houseHelpTitle: 'House section objective',
     houseHelpText:
       'Capture customer needs, then map how strongly each technical response supports those needs. Start with critical needs and assign relationships consistently.',
+    needsHelpTitle: 'Customer needs objective',
+    needsHelpText:
+      'List the core customer expectations and prioritize each one by importance. Keep statements specific and measurable when possible.',
     roofTitle: 'Technical correlations',
     roofHelper: 'Click cells to cycle 0 → + → ++ → − → −−.',
     roofLabel: 'Roof',
     roofHelpTitle: 'Roof section objective',
     roofHelpText:
       'Identify interactions between technical responses. Positive links reinforce outcomes and negative links reveal tradeoffs that need mitigation.',
+    requirementsHelpTitle: 'Technical responses objective',
+    requirementsHelpText:
+      'Define the engineering responses that can satisfy customer needs. Keep each response actionable and track implementation difficulty.',
+    matrixHelpTitle: 'Relationship scoring objective',
+    matrixHelpText:
+      'Score how strongly each technical response supports each customer need. Use consistent criteria so row-to-row comparisons remain meaningful.',
+    correlationsHelpTitle: 'Correlation matrix objective',
+    correlationsHelpText:
+      'Capture reinforcement and conflicts across technical responses to identify synergies and tradeoffs before implementation.',
     importance: 'Importance',
     difficulty: 'Difficulty',
     projectBrief: 'Project brief',
@@ -203,12 +216,24 @@ const translations = {
     houseHelpTitle: 'Objetivo de la sección Casa',
     houseHelpText:
       'Define las necesidades del cliente y luego relaciona qué tan bien cada respuesta técnica las satisface. Empieza por las necesidades más críticas.',
+    needsHelpTitle: 'Objetivo de necesidades del cliente',
+    needsHelpText:
+      'Enumera las expectativas clave del cliente y priorízalas por importancia. Procura que cada necesidad sea específica y medible.',
     roofTitle: 'Correlaciones técnicas',
     roofHelper: 'Haz clic en las celdas para alternar 0 → + → ++ → − → −−.',
     roofLabel: 'Techo',
     roofHelpTitle: 'Objetivo de la sección Techo',
     roofHelpText:
       'Registra cómo interactúan las respuestas técnicas entre sí. Las relaciones positivas refuerzan resultados y las negativas muestran compensaciones.',
+    requirementsHelpTitle: 'Objetivo de respuestas técnicas',
+    requirementsHelpText:
+      'Define las respuestas de ingeniería que atenderán las necesidades del cliente. Mantén cada respuesta accionable y con dificultad estimada.',
+    matrixHelpTitle: 'Objetivo de la puntuación de relaciones',
+    matrixHelpText:
+      'Puntúa qué tan fuerte es el aporte de cada respuesta técnica a cada necesidad. Usa criterios consistentes para comparar filas.',
+    correlationsHelpTitle: 'Objetivo de la matriz de correlación',
+    correlationsHelpText:
+      'Registra refuerzos y conflictos entre respuestas técnicas para detectar sinergias y compensaciones antes de implementar.',
     importance: 'Importancia',
     difficulty: 'Dificultad',
     projectBrief: 'Resumen del proyecto',
@@ -874,7 +899,7 @@ function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [editorStep, setEditorStep] = useState<EditorStep>('brief')
   const [isMainLocked, setIsMainLocked] = useState(false)
-  const [activeHelp, setActiveHelp] = useState<'house' | 'roof' | null>(null)
+  const [activeHelp, setActiveHelp] = useState<HelpTopic | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const boardRef = useRef(board)
   const chatMessagesRef = useRef(chatMessages)
@@ -1208,6 +1233,35 @@ function App() {
     }
   }
 
+  function toggleHelp(topic: HelpTopic) {
+    setActiveHelp((current) => (current === topic ? null : topic))
+  }
+
+  function renderHelpPopover(topic: HelpTopic, title: string, text: string, mode: 'main' | 'modal') {
+    return (
+      <div className={`help-popover ${mode}`}>
+        <button
+          type="button"
+          className={`icon-button section-control ${activeHelp === topic ? 'active-control' : ''}`}
+          onClick={(event) => {
+            event.stopPropagation()
+            toggleHelp(topic)
+          }}
+          aria-expanded={activeHelp === topic}
+          aria-label={title}
+        >
+          ?
+        </button>
+        {activeHelp === topic ? (
+          <aside className="section-help popover-help" role="note">
+            <strong>{title}</strong>
+            <p>{text}</p>
+          </aside>
+        ) : null}
+      </div>
+    )
+  }
+
   function exportBoard() {
     const payload = createExportPayload(boardRef.current)
     const fileName = `${slugifyFileName(boardRef.current.projectTitle)}.houseofquality.json`
@@ -1436,27 +1490,10 @@ function App() {
               >
                 +
               </button>
-              <button
-                type="button"
-                className={`icon-button section-control ${activeHelp === 'house' ? 'active-control' : ''}`}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  setActiveHelp((current) => (current === 'house' ? null : 'house'))
-                }}
-                aria-expanded={activeHelp === 'house'}
-                aria-label={copy.houseHelpTitle}
-              >
-                ?
-              </button>
+              {renderHelpPopover('house', copy.houseHelpTitle, copy.houseHelpText, 'main')}
             </div>
           </div>
           <p className="helper-copy">{copy.matrixHelper}</p>
-          {activeHelp === 'house' ? (
-            <aside className="section-help">
-              <strong>{copy.houseHelpTitle}</strong>
-              <p>{copy.houseHelpText}</p>
-            </aside>
-          ) : null}
           <div className="table-scroll">
             <table className="matrix-table">
               <thead>
@@ -1470,7 +1507,7 @@ function App() {
               </thead>
               <tbody>
                 {customerNeeds.map((need) => (
-                  <tr key={need.id}>
+                  <tr key={need.id} className="matrix-data-row">
                     <th>{need.name}</th>
                     {technicalRequirements.map((requirement) => {
                       const key = relationshipKey(need.id, requirement.id)
@@ -1493,17 +1530,19 @@ function App() {
                         </td>
                       )
                     })}
-                    <td>{need.importance}</td>
+                    <td className="matrix-importance-cell">{need.importance}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr>
-                  <th>{copy.weightedOpportunity}</th>
+                <tr className="weighted-row">
+                  <th className="weighted-label">{copy.weightedOpportunity}</th>
                   {technicalRequirements.map((requirement) => (
-                    <td key={requirement.id}>{weightedScores[requirement.id] ?? 0}</td>
+                    <td key={requirement.id} className="weighted-value">
+                      {weightedScores[requirement.id] ?? 0}
+                    </td>
                   ))}
-                  <td>{totalOpportunity}</td>
+                  <td className="weighted-value">{totalOpportunity}</td>
                 </tr>
               </tfoot>
             </table>
@@ -1535,27 +1574,10 @@ function App() {
               >
                 +
               </button>
-              <button
-                type="button"
-                className={`icon-button section-control ${activeHelp === 'roof' ? 'active-control' : ''}`}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  setActiveHelp((current) => (current === 'roof' ? null : 'roof'))
-                }}
-                aria-expanded={activeHelp === 'roof'}
-                aria-label={copy.roofHelpTitle}
-              >
-                ?
-              </button>
+              {renderHelpPopover('roof', copy.roofHelpTitle, copy.roofHelpText, 'main')}
             </div>
           </div>
           <p className="helper-copy">{copy.roofHelper}</p>
-          {activeHelp === 'roof' ? (
-            <aside className="section-help">
-              <strong>{copy.roofHelpTitle}</strong>
-              <p>{copy.roofHelpText}</p>
-            </aside>
-          ) : null}
           <div className="table-scroll">
             <table className="roof-table">
               <thead>
@@ -1568,7 +1590,7 @@ function App() {
               </thead>
               <tbody>
                 {technicalRequirements.map((leftRequirement, rowIndex) => (
-                  <tr key={`roof-row-${leftRequirement.id}`}>
+                  <tr key={`roof-row-${leftRequirement.id}`} className="roof-data-row">
                     <th>{leftRequirement.name}</th>
                     {technicalRequirements.map((rightRequirement, columnIndex) => {
                       if (columnIndex <= rowIndex) {
@@ -1683,9 +1705,12 @@ function App() {
                   <div className="stack-list">
                     <div className="section-header compact-header">
                       <p className="helper-copy">{copy.customerNeeds}</p>
-                      <button type="button" className="primary-button" onClick={addCustomerNeed}>
-                        {copy.addNeed}
-                      </button>
+                      <div className="section-controls">
+                        {renderHelpPopover('needs', copy.needsHelpTitle, copy.needsHelpText, 'modal')}
+                        <button type="button" className="primary-button" onClick={addCustomerNeed}>
+                          {copy.addNeed}
+                        </button>
+                      </div>
                     </div>
                     {customerNeeds.map((need) => (
                       <div key={need.id} className="item-row">
@@ -1723,9 +1748,17 @@ function App() {
                   <div className="stack-list">
                     <div className="section-header compact-header">
                       <p className="helper-copy">{copy.technicalResponses}</p>
-                      <button type="button" className="primary-button" onClick={addTechnicalRequirement}>
-                        {copy.addResponse}
-                      </button>
+                      <div className="section-controls">
+                        {renderHelpPopover(
+                          'requirements',
+                          copy.requirementsHelpTitle,
+                          copy.requirementsHelpText,
+                          'modal',
+                        )}
+                        <button type="button" className="primary-button" onClick={addTechnicalRequirement}>
+                          {copy.addResponse}
+                        </button>
+                      </div>
                     </div>
                     {technicalRequirements.map((requirement) => (
                       <div key={requirement.id} className="item-row">
@@ -1769,7 +1802,10 @@ function App() {
 
                 {editorStep === 'matrix' ? (
                   <div className="stack-list">
-                    <p className="helper-copy">{copy.relationshipGuide}</p>
+                    <div className="guide-row">
+                      <p className="helper-copy">{copy.relationshipGuide}</p>
+                      {renderHelpPopover('matrix', copy.matrixHelpTitle, copy.matrixHelpText, 'modal')}
+                    </div>
                     <div className="table-scroll modal-table-scroll">
                       <table className="matrix-table compact-matrix-table">
                         <thead>
@@ -1805,7 +1841,15 @@ function App() {
                         </tbody>
                       </table>
                     </div>
-                    <p className="helper-copy">{copy.roofGuide}</p>
+                    <div className="guide-row">
+                      <p className="helper-copy">{copy.roofGuide}</p>
+                      {renderHelpPopover(
+                        'correlations',
+                        copy.correlationsHelpTitle,
+                        copy.correlationsHelpText,
+                        'modal',
+                      )}
+                    </div>
                     <div className="table-scroll modal-table-scroll">
                       <table className="roof-table compact-matrix-table">
                         <thead>

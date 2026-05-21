@@ -29,7 +29,7 @@
   top: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   gap: 0.75rem;
   width: 100%;
   align-items: center;
@@ -638,7 +638,7 @@ textarea {
 }
 
 .section-help {
-  margin: 0 0 0.9rem;
+  margin: 0;
   padding: 0.75rem 0.9rem;
   border-radius: 0.9rem;
   border: 1px solid rgba(148, 163, 184, 0.2);
@@ -674,6 +674,66 @@ textarea {
   background: rgba(37, 99, 235, 0.2);
 }
 
+.help-popover {
+  position: relative;
+}
+
+.popover-help {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 140;
+  width: min(22rem, 70vw);
+  box-shadow: 0 20px 50px rgba(2, 6, 23, 0.5);
+}
+
+.help-popover.modal .popover-help {
+  width: min(24rem, 80vw);
+}
+
+.guide-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.matrix-data-row th,
+.matrix-data-row td,
+.roof-data-row th,
+.roof-data-row td {
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.matrix-data-row:nth-child(even) th,
+.matrix-data-row:nth-child(even) td,
+.roof-data-row:nth-child(even) th,
+.roof-data-row:nth-child(even) td {
+  background: rgba(30, 41, 59, 0.45);
+}
+
+.matrix-importance-cell {
+  font-weight: 700;
+  color: #dbeafe;
+  background: rgba(37, 99, 235, 0.14) !important;
+}
+
+.weighted-row th,
+.weighted-row td {
+  background: rgba(56, 189, 248, 0.12);
+  border-top: 1px solid rgba(125, 211, 252, 0.38);
+}
+
+.weighted-label {
+  color: #bfdbfe !important;
+  font-weight: 700 !important;
+}
+
+.weighted-value {
+  color: #e0f2fe;
+  font-weight: 700;
+}
+
 @media (max-width: 1120px) {
   .toolbar-button {
     width: 2.9rem;
@@ -697,18 +757,23 @@ textarea {
   }
 
   .app-header {
-    grid-template-columns: 1fr;
-    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .app-title {
+    grid-column: 1;
   }
 
   .header-toolbar {
-    width: 100%;
-    justify-content: flex-start;
-    justify-self: start;
+    grid-column: 1 / -1;
+    justify-content: center;
+    justify-self: center;
   }
 
   .language-picker {
-    justify-self: start;
+    grid-column: 2;
+    justify-self: end;
   }
 }
 
@@ -747,6 +812,28 @@ textarea {
 
   .modal-overlay {
     padding: 0.75rem;
+  }
+
+  .mobile-menu {
+    position: fixed;
+    top: 4.6rem;
+    left: 0.75rem;
+    right: 0.75rem;
+    min-width: auto;
+    max-height: calc(100vh - 5.5rem);
+    overflow-y: auto;
+    z-index: 140;
+  }
+
+  .popover-help,
+  .help-popover.modal .popover-help {
+    width: min(20rem, calc(100vw - 2rem));
+    right: auto;
+    left: 0;
+  }
+
+  .guide-row {
+    align-items: center;
   }
 
   .main-chatbot {

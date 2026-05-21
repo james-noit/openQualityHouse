@@ -85,7 +85,7 @@ type ExportedHouseFile = HouseDraft & {
 const STORAGE_KEY = 'open-quality-house-state'
 const relationshipCycle: RelationshipStrength[] = [0, 1, 3, 9]
 const roofCycle: CorrelationStrength[] = [0, 1, 2, -1, -2]
-const MAX_HISTORY_LENGTH = 20
+const maxHistoryLength = 20
 let fallbackIdCounter = 0
 
 const translations = {
@@ -414,7 +414,7 @@ function coerceCorrelation(value: number): CorrelationStrength {
  * When the input is missing or invalid, the function falls back to 1 so the
  * matrix remains valid and never stores empty or NaN values.
  */
-function normalizeRating(value: number | undefined) {
+function normalizeRating(value: number | undefined): number {
   if (value === undefined) {
     return 1
   }
@@ -914,7 +914,7 @@ function App() {
 
     if (!skipHistoryTracking) {
       setUndoStack((previous) => [
-        ...previous.slice(-(MAX_HISTORY_LENGTH - 1)),
+        ...previous.slice(-(maxHistoryLength - 1)),
         cloneBoardState(current),
       ])
       setRedoStack([])
@@ -930,7 +930,7 @@ function App() {
         need.id === id
           ? {
               ...need,
-              [field]: field === 'importance' ? normalizeRating(Number(value)) : String(value),
+              [field]: field === 'importance' ? normalizeRating(Number(value)) : value,
             }
           : need,
       ),
@@ -948,7 +948,7 @@ function App() {
         requirement.id === id
           ? {
               ...requirement,
-              [field]: field === 'difficulty' ? normalizeRating(Number(value)) : String(value),
+              [field]: field === 'difficulty' ? normalizeRating(Number(value)) : value,
             }
           : requirement,
       ),
@@ -1043,7 +1043,7 @@ function App() {
       }
 
       setRedoStack((redoHistory) => [
-        ...redoHistory.slice(-(MAX_HISTORY_LENGTH - 1)),
+        ...redoHistory.slice(-(maxHistoryLength - 1)),
         cloneBoardState(boardRef.current),
       ])
       setBoard(cloneBoardState(priorState))
@@ -1060,7 +1060,7 @@ function App() {
       }
 
       setUndoStack((undoHistory) => [
-        ...undoHistory.slice(-(MAX_HISTORY_LENGTH - 1)),
+        ...undoHistory.slice(-(maxHistoryLength - 1)),
         cloneBoardState(boardRef.current),
       ])
       setBoard(cloneBoardState(nextState))
@@ -1113,11 +1113,10 @@ function App() {
       content: chatInput.trim(),
     }
 
-    const messageHistory = chatMessagesRef.current
     setChatMessages((current) => [...current, userMessage])
 
     try {
-      const request = getProviderRequest(aiConfig, chatInput.trim(), messageHistory)
+      const request = getProviderRequest(aiConfig, chatInput.trim(), chatMessagesRef.current)
       const response = await fetch(request.url, request.options)
       const responseText = await request.extractText(response)
       const assistantMessage: ChatMessage = {

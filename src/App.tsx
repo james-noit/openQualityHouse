@@ -76,6 +76,7 @@ type SavedState = {
 const STORAGE_KEY = 'open-quality-house-state'
 const relationshipCycle: RelationshipStrength[] = [0, 1, 3, 9]
 const roofCycle: CorrelationStrength[] = [0, 1, 2, -1, -2]
+let fallbackIdCounter = 0
 
 const providerOptions: Array<{ value: AiProvider; label: string; description: string }> = [
   {
@@ -221,9 +222,20 @@ function loadSavedState(): SavedState {
 }
 
 function createId() {
-  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : Math.random().toString(36).slice(2, 11)
+  const webCrypto = globalThis.crypto
+
+  if (webCrypto) {
+    if (typeof webCrypto.randomUUID === 'function') {
+      return webCrypto.randomUUID()
+    }
+
+    const bytes = new Uint8Array(16)
+    webCrypto.getRandomValues(bytes)
+    return Array.from(bytes, (value) => value.toString(16).padStart(2, '0')).join('')
+  }
+
+  fallbackIdCounter += 1
+  return `id-${Date.now()}-${fallbackIdCounter}`
 }
 
 function relationshipKey(customerNeedId: string, technicalRequirementId: string) {

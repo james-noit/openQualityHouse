@@ -1404,11 +1404,13 @@ function App() {
             isMainLocked
               ? undefined
               : (event) => {
+                  if (event.key === ' ') {
+                    event.preventDefault()
+                  }
+
                   if (event.key !== 'Enter' && event.key !== ' ') {
                     return
                   }
-
-                  event.preventDefault()
                   openEditorAt('needs')
                 }
           }
@@ -1514,11 +1516,13 @@ function App() {
             isMainLocked
               ? undefined
               : (event) => {
+                  if (event.key === ' ') {
+                    event.preventDefault()
+                  }
+
                   if (event.key !== 'Enter' && event.key !== ' ') {
                     return
                   }
-
-                  event.preventDefault()
                   openEditorAt('requirements')
                 }
           }

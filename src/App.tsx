@@ -112,8 +112,10 @@ const translations = {
     weightedOpportunity: 'Weighted opportunity',
     matrixTitle: 'Relationship matrix',
     matrixHelper: 'Click cells to cycle 0 → 1 → 3 → 9.',
+    houseLabel: 'House',
     roofTitle: 'Technical correlations',
     roofHelper: 'Click cells to cycle 0 → + → ++ → − → −−.',
+    roofLabel: 'Roof',
     importance: 'Importance',
     difficulty: 'Difficulty',
     projectBrief: 'Project brief',
@@ -149,6 +151,7 @@ const translations = {
     generateDraft: 'Generate House of Quality draft',
     assistant: 'Assistant',
     you: 'You',
+    aiPopupTitle: 'AI draft assistant',
     importSuccess: 'House of Quality imported successfully.',
     exportSuccess: 'House of Quality exported successfully.',
     resetSuccess: 'House of Quality reset to the starter template.',
@@ -186,8 +189,10 @@ const translations = {
     weightedOpportunity: 'Oportunidad ponderada',
     matrixTitle: 'Matriz de relaciones',
     matrixHelper: 'Haz clic en las celdas para alternar 0 → 1 → 3 → 9.',
+    houseLabel: 'Casa',
     roofTitle: 'Correlaciones técnicas',
     roofHelper: 'Haz clic en las celdas para alternar 0 → + → ++ → − → −−.',
+    roofLabel: 'Techo',
     importance: 'Importancia',
     difficulty: 'Dificultad',
     projectBrief: 'Resumen del proyecto',
@@ -223,6 +228,7 @@ const translations = {
     generateDraft: 'Generar borrador de la Casa de la Calidad',
     assistant: 'Asistente',
     you: 'Tú',
+    aiPopupTitle: 'Asistente de borrador IA',
     importSuccess: 'La Casa de la Calidad se importó correctamente.',
     exportSuccess: 'La Casa de la Calidad se exportó correctamente.',
     resetSuccess: 'La Casa de la Calidad volvió a la plantilla inicial.',
@@ -1279,11 +1285,7 @@ function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <div>
-          <p className="eyebrow">{copy.mainEyebrow}</p>
-          <h1>{copy.appTitle}</h1>
-          <p className="hero-copy header-copy">{copy.appSubtitle}</p>
-        </div>
+        <h1 className="app-title">{copy.appTitle}</h1>
 
         <div className="header-toolbar">
           <div className="toolbar desktop-toolbar">{renderToolbarActions()}</div>
@@ -1301,13 +1303,29 @@ function App() {
             {mobileMenuOpen ? <div className="toolbar-menu mobile-menu">{renderToolbarActions(true)}</div> : null}
           </div>
 
-          <label className="language-picker">
-            <span>{copy.language}</span>
-            <select value={language} onChange={(event) => setLanguage(event.target.value as Language)}>
-              <option value="en">{copy.english}</option>
-              <option value="es">{copy.spanish}</option>
-            </select>
-          </label>
+          <div className="language-picker" role="group" aria-label={copy.language}>
+            <span className="language-icon" aria-hidden="true">
+              🌐
+            </span>
+            <button
+              type="button"
+              className={`language-chip ${language === 'en' ? 'active' : ''}`}
+              onClick={() => setLanguage('en')}
+              aria-label={copy.english}
+            >
+              <span aria-hidden="true">🇬🇧</span>
+              <span className="language-label">{copy.english}</span>
+            </button>
+            <button
+              type="button"
+              className={`language-chip ${language === 'es' ? 'active' : ''}`}
+              onClick={() => setLanguage('es')}
+              aria-label={copy.spanish}
+            >
+              <span aria-hidden="true">🇪🇸</span>
+              <span className="language-label">{copy.spanish}</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -1333,11 +1351,13 @@ function App() {
           </button>
         </section>
 
-        <article className="card section-card compact-section-card">
+        <article className="card section-card compact-section-card house-section">
           <div className="section-header">
             <div>
+              <p className="section-tag">{copy.houseLabel}</p>
               <h2>{copy.matrixTitle}</h2>
             </div>
+            <p className="helper-copy">{copy.matrixHelper}</p>
           </div>
           <div className="table-scroll">
             <table className="matrix-table">
@@ -1388,11 +1408,13 @@ function App() {
           </div>
         </article>
 
-        <article className="card section-card compact-section-card">
+        <article className="card section-card compact-section-card roof-section">
           <div className="section-header">
             <div>
+              <p className="section-tag">{copy.roofLabel}</p>
               <h2>{copy.roofTitle}</h2>
             </div>
+            <p className="helper-copy">{copy.roofHelper}</p>
           </div>
           <div className="table-scroll">
             <table className="roof-table">
@@ -1727,6 +1749,53 @@ function App() {
         </div>
       ) : null}
 
+      {aiConfig.enabled ? (
+        <section className="main-chatbot card" aria-label={copy.aiPopupTitle}>
+          <div className="main-chatbot-header">
+            <div>
+              <p className="eyebrow">{copy.ai}</p>
+              <h2>{copy.aiPopupTitle}</h2>
+            </div>
+            <button type="button" className="ghost-button" onClick={() => setIsAiModalOpen(true)}>
+              {copy.ai}
+            </button>
+          </div>
+          <form
+            className="stack-list assistant-form"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void generateDraft()
+            }}
+          >
+            <div className="chat-log" aria-live="polite">
+              {chatMessages.map((message) => (
+                <article key={message.id} className={`chat-bubble ${message.role}`}>
+                  <span>{message.role === 'assistant' ? copy.assistant : copy.you}</span>
+                  <p>{message.content}</p>
+                </article>
+              ))}
+            </div>
+
+            <label>
+              {copy.promptLabel}
+              <textarea
+                rows={4}
+                value={chatInput}
+                onChange={(event) => setChatInput(event.target.value)}
+                placeholder={copy.promptPlaceholder}
+              />
+            </label>
+
+            {assistantStatus ? <p className="status-message success">{assistantStatus}</p> : null}
+            {assistantError ? <p className="status-message error">{assistantError}</p> : null}
+
+            <button type="submit" className="primary-button full-width">
+              {copy.generateDraft}
+            </button>
+          </form>
+        </section>
+      ) : null}
+
       {isAiModalOpen ? (
         <div className="modal-overlay" role="presentation" onClick={() => setIsAiModalOpen(false)}>
           <div
@@ -1756,13 +1825,7 @@ function App() {
               {copy.enableAssistant}
             </label>
 
-            <form
-              className="stack-list assistant-form"
-              onSubmit={(event) => {
-                event.preventDefault()
-                void generateDraft()
-              }}
-            >
+            <div className="stack-list assistant-form">
               <div className="provider-grid">
                 {providerOptions.map((provider) => (
                   <button
@@ -1813,33 +1876,7 @@ function App() {
               </div>
 
               <p className="helper-copy">{copy.localOnly}</p>
-
-              <div className="chat-log" aria-live="polite">
-                {chatMessages.map((message) => (
-                  <article key={message.id} className={`chat-bubble ${message.role}`}>
-                    <span>{message.role === 'assistant' ? copy.assistant : copy.you}</span>
-                    <p>{message.content}</p>
-                  </article>
-                ))}
-              </div>
-
-              <label>
-                {copy.promptLabel}
-                <textarea
-                  rows={5}
-                  value={chatInput}
-                  onChange={(event) => setChatInput(event.target.value)}
-                  placeholder={copy.promptPlaceholder}
-                />
-              </label>
-
-              {assistantStatus ? <p className="status-message success">{assistantStatus}</p> : null}
-              {assistantError ? <p className="status-message error">{assistantError}</p> : null}
-
-              <button type="submit" className="primary-button full-width">
-                {copy.generateDraft}
-              </button>
-            </form>
+            </div>
           </div>
         </div>
       ) : null}

@@ -85,7 +85,7 @@ type ExportedHouseFile = HouseDraft & {
 const STORAGE_KEY = 'open-quality-house-state'
 const relationshipCycle: RelationshipStrength[] = [0, 1, 3, 9]
 const roofCycle: CorrelationStrength[] = [0, 1, 2, -1, -2]
-const HISTORY_LIMIT = 20
+const UNDO_REDO_HISTORY_LIMIT = 20
 let fallbackIdCounter = 0
 
 const translations = {
@@ -410,7 +410,17 @@ function coerceCorrelation(value: number): CorrelationStrength {
 }
 
 function normalizeRating(value: number | undefined) {
-  return Math.min(5, Math.max(1, Number(value) || 1))
+  if (value === undefined) {
+    return 1
+  }
+
+  const numericValue = Number(value)
+
+  if (Number.isNaN(numericValue)) {
+    return 1
+  }
+
+  return Math.min(5, Math.max(1, numericValue))
 }
 
 function cloneCustomerNeeds(customerNeeds: CustomerNeed[]) {
@@ -434,6 +444,10 @@ function cloneBoardState(state: BoardState): BoardState {
 
 function cloneChatMessages(messages: ChatMessage[]) {
   return messages.map((message) => ({ ...message }))
+}
+
+function hasNamedDraftItem<T extends { name?: string }>(item: T): item is T & { name: string } {
+  return typeof item.name === 'string' && item.name.trim().length > 0
 }
 
 function getProviderRequest(
@@ -610,7 +624,7 @@ function buildBoardFromDraft(draft: HouseDraft, current: BoardState): BoardState
   const nextNeeds =
     draft.customerNeeds?.length
       ? draft.customerNeeds
-          .filter((need) => need.name?.trim())
+          .filter(hasNamedDraftItem)
           .map((need) => ({
             id: createId(),
             name: need.name.trim(),
@@ -621,7 +635,7 @@ function buildBoardFromDraft(draft: HouseDraft, current: BoardState): BoardState
   const nextRequirements =
     draft.technicalRequirements?.length
       ? draft.technicalRequirements
-          .filter((requirement) => requirement.name?.trim())
+          .filter(hasNamedDraftItem)
           .map((requirement) => ({
             id: createId(),
             name: requirement.name.trim(),
@@ -834,6 +848,7 @@ function App() {
   const [editorStep, setEditorStep] = useState<EditorStep>('brief')
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const boardRef = useRef(board)
+  const chatMessagesRef = useRef(chatMessages)
   const copy = translations[language]
 
   const { customerNeeds, matrix, problemStatement, projectTitle, roofMatrix, technicalRequirements } =
@@ -842,6 +857,10 @@ function App() {
   useEffect(() => {
     boardRef.current = board
   }, [board])
+
+  useEffect(() => {
+    chatMessagesRef.current = chatMessages
+  }, [chatMessages])
 
   useEffect(() => {
     const state: SavedState = {
@@ -877,7 +896,10 @@ function App() {
     matrix: copy.stepMatrix,
   }
 
-  function commitBoard(update: BoardState | ((current: BoardState) => BoardState), skipHistory = false) {
+  function commitBoard(
+    update: BoardState | ((current: BoardState) => BoardState),
+    skipHistoryTracking = false,
+  ) {
     const current = boardRef.current
     const next = typeof update === 'function' ? update(current) : update
 
@@ -885,8 +907,11 @@ function App() {
       return
     }
 
-    if (!skipHistory) {
-      setUndoStack((previous) => [...previous.slice(-(HISTORY_LIMIT - 1)), cloneBoardState(current)])
+    if (!skipHistoryTracking) {
+      setUndoStack((previous) => [
+        ...previous.slice(-(UNDO_REDO_HISTORY_LIMIT - 1)),
+        cloneBoardState(current),
+      ])
       setRedoStack([])
     }
 
@@ -1013,7 +1038,7 @@ function App() {
       }
 
       setRedoStack((redoHistory) => [
-        ...redoHistory.slice(-(HISTORY_LIMIT - 1)),
+        ...redoHistory.slice(-(UNDO_REDO_HISTORY_LIMIT - 1)),
         cloneBoardState(boardRef.current),
       ])
       setBoard(cloneBoardState(priorState))
@@ -1030,7 +1055,7 @@ function App() {
       }
 
       setUndoStack((undoHistory) => [
-        ...undoHistory.slice(-(HISTORY_LIMIT - 1)),
+        ...undoHistory.slice(-(UNDO_REDO_HISTORY_LIMIT - 1)),
         cloneBoardState(boardRef.current),
       ])
       setBoard(cloneBoardState(nextState))
@@ -1083,10 +1108,11 @@ function App() {
       content: chatInput.trim(),
     }
 
-    setChatMessages([...chatMessages, userMessage])
+    const currentMessages = chatMessagesRef.current
+    setChatMessages((current) => [...current, userMessage])
 
     try {
-      const request = getProviderRequest(aiConfig, chatInput.trim(), chatMessages)
+      const request = getProviderRequest(aiConfig, chatInput.trim(), currentMessages)
       const response = await fetch(request.url, request.options)
       const responseText = await request.extractText(response)
       const assistantMessage: ChatMessage = {

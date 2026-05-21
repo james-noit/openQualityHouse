@@ -873,7 +873,7 @@ function App() {
   const [fileMenuOpen, setFileMenuOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [editorStep, setEditorStep] = useState<EditorStep>('brief')
-  const [mainLocked, setMainLocked] = useState(false)
+  const [isMainLocked, setIsMainLocked] = useState(false)
   const [activeHelp, setActiveHelp] = useState<'house' | 'roof' | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const boardRef = useRef(board)
@@ -990,7 +990,7 @@ function App() {
   }
 
   function addCustomerNeedFromMain() {
-    if (mainLocked) {
+    if (isMainLocked) {
       return
     }
 
@@ -1012,7 +1012,7 @@ function App() {
   }
 
   function addTechnicalRequirementFromMain() {
-    if (mainLocked) {
+    if (isMainLocked) {
       return
     }
 
@@ -1053,7 +1053,7 @@ function App() {
   }
 
   function cycleRelationship(customerNeedId: string, technicalRequirementId: string) {
-    if (mainLocked) {
+    if (isMainLocked) {
       return
     }
 
@@ -1068,7 +1068,7 @@ function App() {
   }
 
   function cycleRoof(leftId: string, rightId: string) {
-    if (mainLocked) {
+    if (isMainLocked) {
       return
     }
 
@@ -1200,7 +1200,7 @@ function App() {
   }
 
   function openEditorAt(step: EditorStep) {
-    if (mainLocked) {
+    if (isMainLocked) {
       return
     }
 
@@ -1331,12 +1331,12 @@ function App() {
         </button>
         <button
           type="button"
-          className={`toolbar-button ${mainLocked ? 'active-control' : ''}`}
-          onClick={() => setMainLocked((current) => !current)}
-          aria-pressed={mainLocked}
+          className={`toolbar-button ${isMainLocked ? 'active-control' : ''}`}
+          onClick={() => setIsMainLocked((current) => !current)}
+          aria-pressed={isMainLocked}
         >
-          <span aria-hidden="true">{mainLocked ? '🔒' : '🔓'}</span>
-          <span className="button-label">{mainLocked ? copy.unlock : copy.lock}</span>
+          <span aria-hidden="true">{isMainLocked ? '🔒' : '🔓'}</span>
+          <span className="button-label">{isMainLocked ? copy.unlock : copy.lock}</span>
         </button>
       </>
     )
@@ -1412,16 +1412,20 @@ function App() {
         </section>
 
         <article
-          className={`card section-card compact-section-card house-section ${mainLocked ? 'section-locked' : 'clickable-section'}`}
-          onClick={() => openEditorAt('needs')}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault()
-              openEditorAt('needs')
-            }
-          }}
-          role="button"
-          tabIndex={0}
+          className={`card section-card compact-section-card house-section ${isMainLocked ? 'section-locked' : 'clickable-section'}`}
+          onClick={isMainLocked ? undefined : () => openEditorAt('needs')}
+          onKeyDown={
+            isMainLocked
+              ? undefined
+              : (event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    openEditorAt('needs')
+                  }
+                }
+          }
+          role={isMainLocked ? undefined : 'button'}
+          tabIndex={isMainLocked ? -1 : 0}
         >
           <div className="section-header">
             <div>
@@ -1436,7 +1440,7 @@ function App() {
                   event.stopPropagation()
                   addCustomerNeedFromMain()
                 }}
-                disabled={mainLocked}
+                disabled={isMainLocked}
                 aria-label={copy.addNeed}
               >
                 +
@@ -1491,7 +1495,7 @@ function App() {
                               cycleRelationship(need.id, requirement.id)
                             }}
                             aria-label={`Relationship between ${need.name} and ${requirement.name}: ${value}`}
-                            disabled={mainLocked}
+                            disabled={isMainLocked}
                           >
                             {value}
                           </button>
@@ -1516,16 +1520,20 @@ function App() {
         </article>
 
         <article
-          className={`card section-card compact-section-card roof-section ${mainLocked ? 'section-locked' : 'clickable-section'}`}
-          onClick={() => openEditorAt('requirements')}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault()
-              openEditorAt('requirements')
-            }
-          }}
-          role="button"
-          tabIndex={0}
+          className={`card section-card compact-section-card roof-section ${isMainLocked ? 'section-locked' : 'clickable-section'}`}
+          onClick={isMainLocked ? undefined : () => openEditorAt('requirements')}
+          onKeyDown={
+            isMainLocked
+              ? undefined
+              : (event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    openEditorAt('requirements')
+                  }
+                }
+          }
+          role={isMainLocked ? undefined : 'button'}
+          tabIndex={isMainLocked ? -1 : 0}
         >
           <div className="section-header">
             <div>
@@ -1540,7 +1548,7 @@ function App() {
                   event.stopPropagation()
                   addTechnicalRequirementFromMain()
                 }}
-                disabled={mainLocked}
+                disabled={isMainLocked}
                 aria-label={copy.addResponse}
               >
                 +
@@ -1600,7 +1608,7 @@ function App() {
                               cycleRoof(leftRequirement.id, rightRequirement.id)
                             }}
                             aria-label={`Correlation between ${leftRequirement.name} and ${rightRequirement.name}: ${label}`}
-                            disabled={mainLocked}
+                            disabled={isMainLocked}
                           >
                             {label}
                           </button>

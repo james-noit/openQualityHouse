@@ -989,14 +989,6 @@ function App() {
     }))
   }
 
-  function addCustomerNeedFromMain() {
-    if (isMainLocked) {
-      return
-    }
-
-    addCustomerNeed()
-  }
-
   function addTechnicalRequirement() {
     commitBoard((current) => ({
       ...current,
@@ -1009,14 +1001,6 @@ function App() {
         },
       ],
     }))
-  }
-
-  function addTechnicalRequirementFromMain() {
-    if (isMainLocked) {
-      return
-    }
-
-    addTechnicalRequirement()
   }
 
   function removeCustomerNeed(id: string) {
@@ -1053,33 +1037,29 @@ function App() {
   }
 
   function cycleRelationship(customerNeedId: string, technicalRequirementId: string) {
-    if (isMainLocked) {
-      return
-    }
-
-    const key = relationshipKey(customerNeedId, technicalRequirementId)
-    commitBoard((current) => ({
-      ...current,
-      matrix: {
-        ...current.matrix,
-        [key]: getNextValue(relationshipCycle, current.matrix[key] ?? 0),
-      },
-    }))
+    runIfMainUnlocked(() => {
+      const key = relationshipKey(customerNeedId, technicalRequirementId)
+      commitBoard((current) => ({
+        ...current,
+        matrix: {
+          ...current.matrix,
+          [key]: getNextValue(relationshipCycle, current.matrix[key] ?? 0),
+        },
+      }))
+    })
   }
 
   function cycleRoof(leftId: string, rightId: string) {
-    if (isMainLocked) {
-      return
-    }
-
-    const key = roofKey(leftId, rightId)
-    commitBoard((current) => ({
-      ...current,
-      roofMatrix: {
-        ...current.roofMatrix,
-        [key]: getNextValue(roofCycle, current.roofMatrix[key] ?? 0),
-      },
-    }))
+    runIfMainUnlocked(() => {
+      const key = roofKey(leftId, rightId)
+      commitBoard((current) => ({
+        ...current,
+        roofMatrix: {
+          ...current.roofMatrix,
+          [key]: getNextValue(roofCycle, current.roofMatrix[key] ?? 0),
+        },
+      }))
+    })
   }
 
   function undoBoard() {
@@ -1199,13 +1179,19 @@ function App() {
     }))
   }
 
-  function openEditorAt(step: EditorStep) {
+  function runIfMainUnlocked(action: () => void) {
     if (isMainLocked) {
       return
     }
 
-    setEditorStep(step)
-    setIsEditorOpen(true)
+    action()
+  }
+
+  function openEditorAt(step: EditorStep) {
+    runIfMainUnlocked(() => {
+      setEditorStep(step)
+      setIsEditorOpen(true)
+    })
   }
 
   function exportBoard() {
@@ -1418,10 +1404,12 @@ function App() {
             isMainLocked
               ? undefined
               : (event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    openEditorAt('needs')
+                  if (event.key !== 'Enter' && event.key !== ' ') {
+                    return
                   }
+
+                  event.preventDefault()
+                  openEditorAt('needs')
                 }
           }
           role={isMainLocked ? undefined : 'button'}
@@ -1438,7 +1426,7 @@ function App() {
                 className="icon-button section-control"
                 onClick={(event) => {
                   event.stopPropagation()
-                  addCustomerNeedFromMain()
+                  runIfMainUnlocked(addCustomerNeed)
                 }}
                 disabled={isMainLocked}
                 aria-label={copy.addNeed}
@@ -1526,10 +1514,12 @@ function App() {
             isMainLocked
               ? undefined
               : (event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    openEditorAt('requirements')
+                  if (event.key !== 'Enter' && event.key !== ' ') {
+                    return
                   }
+
+                  event.preventDefault()
+                  openEditorAt('requirements')
                 }
           }
           role={isMainLocked ? undefined : 'button'}
@@ -1546,7 +1536,7 @@ function App() {
                 className="icon-button section-control"
                 onClick={(event) => {
                   event.stopPropagation()
-                  addTechnicalRequirementFromMain()
+                  runIfMainUnlocked(addTechnicalRequirement)
                 }}
                 disabled={isMainLocked}
                 aria-label={copy.addResponse}

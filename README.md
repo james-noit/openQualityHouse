@@ -12,11 +12,14 @@ React is the best fit for this project.
 
 ## Features
 
-- Modern single-page House of Quality editor
+- Responsive application header with file actions, undo/redo, AI access, and language selector
+- Guided modal editor for building the House of Quality step by step
 - Editable customer needs and technical requirements
 - Relationship matrix with weighted opportunity scoring
 - Technical correlation roof
+- Import/export of House of Quality JSON files plus reset confirmation
 - Optional AI chatbot panel with provider presets and custom endpoint/API key support
+- English and Spanish UI support
 - Local browser persistence via `localStorage`
 
 ## Development

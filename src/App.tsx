@@ -1003,84 +1003,93 @@ function App() {
                 Enable browser-side AI generation
               </label>
 
-              <div className="provider-grid">
-                {providerOptions.map((provider) => (
-                  <button
-                    key={provider.value}
-                    type="button"
-                    className={`provider-pill ${aiConfig.provider === provider.value ? 'active' : ''}`}
-                    onClick={() => updateProvider(provider.value)}
-                  >
-                    <strong>{provider.label}</strong>
-                    <span>{provider.description}</span>
-                  </button>
-                ))}
-              </div>
+              <form
+                className="stack-list assistant-form"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  void generateDraft()
+                }}
+              >
+                <div className="provider-grid">
+                  {providerOptions.map((provider) => (
+                    <button
+                      key={provider.value}
+                      type="button"
+                      className={`provider-pill ${aiConfig.provider === provider.value ? 'active' : ''}`}
+                      onClick={() => updateProvider(provider.value)}
+                    >
+                      <strong>{provider.label}</strong>
+                      <span>{provider.description}</span>
+                    </button>
+                  ))}
+                </div>
 
-              <div className="stack-list config-list">
+                <div className="stack-list config-list">
+                  <label>
+                    Model
+                    <input
+                      value={aiConfig.model}
+                      onChange={(event) =>
+                        setAiConfig((current) => ({ ...current, model: event.target.value }))
+                      }
+                      placeholder="Model name"
+                    />
+                  </label>
+                  <label>
+                    API key
+                    <input
+                      type="password"
+                      autoComplete="current-password"
+                      value={aiConfig.apiKey}
+                      onChange={(event) =>
+                        setAiConfig((current) => ({ ...current, apiKey: event.target.value }))
+                      }
+                      placeholder="Stored only in this browser"
+                    />
+                  </label>
+                  <label>
+                    Endpoint
+                    <input
+                      value={aiConfig.endpoint}
+                      onChange={(event) =>
+                        setAiConfig((current) => ({ ...current, endpoint: event.target.value }))
+                      }
+                      placeholder="Provider endpoint"
+                    />
+                  </label>
+                </div>
+
+                <p className="helper-copy">
+                  API keys stay in localStorage on this device. If you do not want AI help, leave
+                  the assistant disabled and build the matrix manually.
+                </p>
+
+                <div className="chat-log" aria-live="polite">
+                  {chatMessages.map((message) => (
+                    <article key={message.id} className={`chat-bubble ${message.role}`}>
+                      <span>{message.role === 'assistant' ? 'Assistant' : 'You'}</span>
+                      <p>{message.content}</p>
+                    </article>
+                  ))}
+                </div>
+
                 <label>
-                  Model
-                  <input
-                    value={aiConfig.model}
-                    onChange={(event) =>
-                      setAiConfig((current) => ({ ...current, model: event.target.value }))
-                    }
-                    placeholder="Model name"
+                  Describe the problem, users, constraints, and desired outcomes
+                  <textarea
+                    rows={5}
+                    value={chatInput}
+                    onChange={(event) => setChatInput(event.target.value)}
+                    placeholder="Example: We need to reduce onboarding friction for enterprise customers while lowering support load."
                   />
                 </label>
-                <label>
-                  API key
-                  <input
-                    type="password"
-                    value={aiConfig.apiKey}
-                    onChange={(event) =>
-                      setAiConfig((current) => ({ ...current, apiKey: event.target.value }))
-                    }
-                    placeholder="Stored only in this browser"
-                  />
-                </label>
-                <label>
-                  Endpoint
-                  <input
-                    value={aiConfig.endpoint}
-                    onChange={(event) =>
-                      setAiConfig((current) => ({ ...current, endpoint: event.target.value }))
-                    }
-                    placeholder="Provider endpoint"
-                  />
-                </label>
-              </div>
 
-              <p className="helper-copy">
-                API keys stay in localStorage on this device. If you do not want AI help, leave the
-                assistant disabled and build the matrix manually.
-              </p>
+                {assistantStatus ? <p className="status-message success">{assistantStatus}</p> : null}
+                {assistantError ? <p className="status-message error">{assistantError}</p> : null}
 
-              <div className="chat-log" aria-live="polite">
-                {chatMessages.map((message) => (
-                  <article key={message.id} className={`chat-bubble ${message.role}`}>
-                    <span>{message.role === 'assistant' ? 'Assistant' : 'You'}</span>
-                    <p>{message.content}</p>
-                  </article>
-                ))}
-              </div>
-
-              <label>
-                Describe the problem, users, constraints, and desired outcomes
-                <textarea
-                  rows={5}
-                  value={chatInput}
-                  onChange={(event) => setChatInput(event.target.value)}
-                  placeholder="Example: We need to reduce onboarding friction for enterprise customers while lowering support load."
-                />
-              </label>
-
-              {assistantStatus ? <p className="status-message success">{assistantStatus}</p> : null}
-              {assistantError ? <p className="status-message error">{assistantError}</p> : null}
-
-              <button type="button" className="primary-button full-width" onClick={generateDraft}>
-                Generate House of Quality draft
-              </button>
+                <button type="submit" className="primary-button full-width">
+                  Generate House of Quality draft
+                </button>
+              </form>
             </>
           ) : null}
         </aside>

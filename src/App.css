@@ -646,6 +646,7 @@ textarea {
 
 .section-controls {
   display: flex;
+  flex-shrink: 0;
   gap: 0.55rem;
   align-items: center;
 }
@@ -713,7 +714,7 @@ textarea {
 }
 
 .popover-portal {
-  z-index: 200;
+  z-index: 9000;
   width: min(22rem, 70vw);
   box-shadow: 0 20px 50px rgba(2, 6, 23, 0.5);
 }
@@ -827,10 +828,14 @@ textarea {
     grid-template-columns: 1fr;
   }
 
-  .section-header,
+  .section-header {
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
   .compact-header,
   .modal-header {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
   }
 

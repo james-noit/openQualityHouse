@@ -1264,20 +1264,13 @@ function App() {
       event.stopPropagation()
       if (!isOpen && mode === 'modal') {
         const rect = event.currentTarget.getBoundingClientRect()
-        setHelpPopoverPosition({ top: rect.bottom + 6, right: window.innerWidth - rect.right })
+        setHelpPopoverPosition({ top: rect.bottom + 6, right: Math.max(0, window.innerWidth - rect.right) })
       }
       if (isOpen) {
         setHelpPopoverPosition(null)
       }
       toggleHelp(topic)
     }
-
-    const popoverContent = (
-      <aside className="section-help popover-help" role="note">
-        <strong>{title}</strong>
-        <p>{text}</p>
-      </aside>
-    )
 
     return (
       <div className={`help-popover ${mode}`}>
@@ -1290,24 +1283,28 @@ function App() {
         >
           ?
         </button>
-        {isOpen
-          ? mode === 'modal' && helpPopoverPosition
-            ? createPortal(
-                <aside
-                  className="section-help popover-portal"
-                  role="note"
-                  style={{
-                    position: 'fixed',
-                    top: helpPopoverPosition.top,
-                    right: helpPopoverPosition.right,
-                  }}
-                >
-                  <strong>{title}</strong>
-                  <p>{text}</p>
-                </aside>,
-                document.body,
-              )
-            : popoverContent
+        {isOpen && mode === 'main' ? (
+          <aside className="section-help popover-help" role="note">
+            <strong>{title}</strong>
+            <p>{text}</p>
+          </aside>
+        ) : null}
+        {isOpen && mode === 'modal' && helpPopoverPosition
+          ? createPortal(
+              <aside
+                className="section-help popover-portal"
+                role="note"
+                style={{
+                  position: 'fixed',
+                  top: helpPopoverPosition.top,
+                  right: helpPopoverPosition.right,
+                }}
+              >
+                <strong>{title}</strong>
+                <p>{text}</p>
+              </aside>,
+              document.body,
+            )
           : null}
       </div>
     )

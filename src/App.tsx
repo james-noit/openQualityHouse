@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 
@@ -904,6 +905,7 @@ function App() {
   const [editorStep, setEditorStep] = useState<EditorStep>('brief')
   const [isMainLocked, setIsMainLocked] = useState(false)
   const [activeHelp, setActiveHelp] = useState<HelpTopic | null>(null)
+  const [helpPopoverPosition, setHelpPopoverPosition] = useState<{ top: number; right: number } | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const boardRef = useRef(board)
   const chatMessagesRef = useRef(chatMessages)
@@ -1256,26 +1258,57 @@ function App() {
   }
 
   function renderHelpPopover(topic: HelpTopic, title: string, text: string, mode: 'main' | 'modal') {
+    const isOpen = activeHelp === topic
+
+    function handleHelpClick(event: React.MouseEvent<HTMLButtonElement>) {
+      event.stopPropagation()
+      if (!isOpen && mode === 'modal') {
+        const rect = event.currentTarget.getBoundingClientRect()
+        setHelpPopoverPosition({ top: rect.bottom + 6, right: window.innerWidth - rect.right })
+      }
+      if (isOpen) {
+        setHelpPopoverPosition(null)
+      }
+      toggleHelp(topic)
+    }
+
+    const popoverContent = (
+      <aside className="section-help popover-help" role="note">
+        <strong>{title}</strong>
+        <p>{text}</p>
+      </aside>
+    )
+
     return (
       <div className={`help-popover ${mode}`}>
         <button
           type="button"
-          className={`icon-button section-control ${activeHelp === topic ? 'active-control' : ''}`}
-          onClick={(event) => {
-            event.stopPropagation()
-            toggleHelp(topic)
-          }}
-          aria-expanded={activeHelp === topic}
+          className={`icon-button section-control ${isOpen ? 'active-control' : ''}`}
+          onClick={handleHelpClick}
+          aria-expanded={isOpen}
           aria-label={title}
         >
           ?
         </button>
-        {activeHelp === topic ? (
-          <aside className="section-help popover-help" role="note">
-            <strong>{title}</strong>
-            <p>{text}</p>
-          </aside>
-        ) : null}
+        {isOpen
+          ? mode === 'modal' && helpPopoverPosition
+            ? createPortal(
+                <aside
+                  className="section-help popover-portal"
+                  role="note"
+                  style={{
+                    position: 'fixed',
+                    top: helpPopoverPosition.top,
+                    right: helpPopoverPosition.right,
+                  }}
+                >
+                  <strong>{title}</strong>
+                  <p>{text}</p>
+                </aside>,
+                document.body,
+              )
+            : popoverContent
+          : null}
       </div>
     )
   }

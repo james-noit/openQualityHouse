@@ -1483,18 +1483,18 @@ function App() {
 
                       return (
                         <td key={key}>
-                            <button
-                              type="button"
-                              className={`matrix-cell strength-${value}`}
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                cycleRelationship(need.id, requirement.id)
-                              }}
-                              aria-label={`Relationship between ${need.name} and ${requirement.name}: ${value}`}
-                              disabled={mainLocked}
-                            >
-                              {value}
-                            </button>
+                          <button
+                            type="button"
+                            className={`matrix-cell strength-${value}`}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              cycleRelationship(need.id, requirement.id)
+                            }}
+                            aria-label={`Relationship between ${need.name} and ${requirement.name}: ${value}`}
+                            disabled={mainLocked}
+                          >
+                            {value}
+                          </button>
                         </td>
                       )
                     })}
@@ -1592,18 +1592,18 @@ function App() {
 
                       return (
                         <td key={key}>
-                           <button
-                             type="button"
-                             className={`matrix-cell roof strength-${value}`}
-                             onClick={(event) => {
-                               event.stopPropagation()
-                               cycleRoof(leftRequirement.id, rightRequirement.id)
-                             }}
-                             aria-label={`Correlation between ${leftRequirement.name} and ${rightRequirement.name}: ${label}`}
-                             disabled={mainLocked}
-                           >
-                             {label}
-                           </button>
+                          <button
+                            type="button"
+                            className={`matrix-cell roof strength-${value}`}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              cycleRoof(leftRequirement.id, rightRequirement.id)
+                            }}
+                            aria-label={`Correlation between ${leftRequirement.name} and ${rightRequirement.name}: ${label}`}
+                            disabled={mainLocked}
+                          >
+                            {label}
+                          </button>
                         </td>
                       )
                     })}

@@ -1278,7 +1278,7 @@ function App() {
 
   return (
     <div className="app-shell">
-      <header className="app-header card">
+      <header className="app-header">
         <div>
           <p className="eyebrow">{copy.mainEyebrow}</p>
           <h1>{copy.appTitle}</h1>
@@ -1320,56 +1320,24 @@ function App() {
       />
 
       <main className="workspace-main">
-        <section className="card board-hero">
-          <div>
-            <p className="eyebrow">{copy.projectBrief}</p>
-            <h2>{projectTitle}</h2>
-            <p className="problem-copy">{problemStatement}</p>
-          </div>
-          <div className="board-hero-actions">
-            <button
-              type="button"
-              className="primary-button"
-              onClick={() => {
-                setEditorStep('brief')
-                setIsEditorOpen(true)
-              }}
-            >
-              {copy.editHouse}
-            </button>
-            <p className="helper-copy">{copy.editDescription}</p>
-          </div>
+        <section className="workspace-actions">
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => {
+              setEditorStep('brief')
+              setIsEditorOpen(true)
+            }}
+          >
+            {copy.editHouse}
+          </button>
         </section>
 
-        {(assistantStatus || assistantError) && (
-          <section className="status-row">
-            {assistantStatus ? <p className="status-message success">{assistantStatus}</p> : null}
-            {assistantError ? <p className="status-message error">{assistantError}</p> : null}
-          </section>
-        )}
-
-        <section className="overview-grid">
-          <article className="card summary-card">
-            <span className="summary-label">{copy.customerNeeds}</span>
-            <strong>{customerNeeds.length}</strong>
-          </article>
-          <article className="card summary-card">
-            <span className="summary-label">{copy.technicalResponses}</span>
-            <strong>{technicalRequirements.length}</strong>
-          </article>
-          <article className="card summary-card accent">
-            <span className="summary-label">{copy.weightedOpportunity}</span>
-            <strong>{totalOpportunity}</strong>
-          </article>
-        </section>
-
-        <article className="card section-card">
+        <article className="card section-card compact-section-card">
           <div className="section-header">
             <div>
-              <p className="eyebrow">{copy.mainEyebrow}</p>
               <h2>{copy.matrixTitle}</h2>
             </div>
-            <p className="helper-copy">{copy.matrixHelper}</p>
           </div>
           <div className="table-scroll">
             <table className="matrix-table">
@@ -1420,13 +1388,11 @@ function App() {
           </div>
         </article>
 
-        <article className="card section-card">
+        <article className="card section-card compact-section-card">
           <div className="section-header">
             <div>
-              <p className="eyebrow">Roof</p>
               <h2>{copy.roofTitle}</h2>
             </div>
-            <p className="helper-copy">{copy.roofHelper}</p>
           </div>
           <div className="table-scroll">
             <table className="roof-table">
@@ -1530,6 +1496,20 @@ function App() {
                         placeholder={copy.problemPlaceholder}
                       />
                     </label>
+                    <section className="overview-grid modal-overview-grid">
+                      <article className="card summary-card">
+                        <span className="summary-label">{copy.customerNeeds}</span>
+                        <strong>{customerNeeds.length}</strong>
+                      </article>
+                      <article className="card summary-card">
+                        <span className="summary-label">{copy.technicalResponses}</span>
+                        <strong>{technicalRequirements.length}</strong>
+                      </article>
+                      <article className="card summary-card accent">
+                        <span className="summary-label">{copy.weightedOpportunity}</span>
+                        <strong>{totalOpportunity}</strong>
+                      </article>
+                    </section>
                   </div>
                 ) : null}
 

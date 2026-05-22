@@ -1166,22 +1166,26 @@ function App() {
     matrix: copy.stepMatrix,
     interpretation: copy.stepInterpretation,
   }
-  const guideStepContent: Record<GuideStep, { description: string; example: string }> = {
+  const guideStepContent: Record<GuideStep, { description: string; example: string; editorStep?: EditorStep }> = {
     brief: {
       description: copy.guidedBriefText,
       example: copy.guidedBriefExample,
+      editorStep: 'brief',
     },
     needs: {
       description: copy.guidedNeedsText,
       example: copy.guidedNeedsExample,
+      editorStep: 'needs',
     },
     requirements: {
       description: copy.guidedRequirementsText,
       example: copy.guidedRequirementsExample,
+      editorStep: 'requirements',
     },
     matrix: {
       description: copy.guidedMatrixText,
       example: copy.guidedMatrixExample,
+      editorStep: 'matrix',
     },
     interpretation: {
       description: copy.guidedInterpretationText,
@@ -1189,6 +1193,20 @@ function App() {
     },
   }
   const activeGuideStep = guideStepContent[guideStep]
+  const MATRIX_FIXED_COLUMN_COUNT = 2
+  const ROOF_FIXED_COLUMN_COUNT = 1
+
+  function resetInlineNeedForm() {
+    setNewNeedName('')
+    setNewNeedImportance(3)
+    setIsAddNeedRowOpen(false)
+  }
+
+  function resetInlineRequirementForm() {
+    setNewRequirementName('')
+    setNewRequirementDifficulty(3)
+    setIsAddRequirementRowOpen(false)
+  }
 
   function commitBoard(
     update: BoardState | ((current: BoardState) => BoardState),
@@ -1294,9 +1312,7 @@ function App() {
         return
       }
       addCustomerNeed({ name, importance: newNeedImportance })
-      setNewNeedName('')
-      setNewNeedImportance(3)
-      setIsAddNeedRowOpen(false)
+      resetInlineNeedForm()
     })
   }
 
@@ -1308,9 +1324,7 @@ function App() {
         return
       }
       addTechnicalRequirement({ name, difficulty: newRequirementDifficulty })
-      setNewRequirementName('')
-      setNewRequirementDifficulty(3)
-      setIsAddRequirementRowOpen(false)
+      resetInlineRequirementForm()
     })
   }
 
@@ -1863,7 +1877,7 @@ function App() {
                   <td className="weighted-value">{totalOpportunity}</td>
                 </tr>
                 <tr className="inline-add-row">
-                  <td colSpan={technicalRequirements.length + 2} onClick={(event) => event.stopPropagation()}>
+                  <td colSpan={technicalRequirements.length + MATRIX_FIXED_COLUMN_COUNT} onClick={(event) => event.stopPropagation()}>
                     {isAddNeedRowOpen ? (
                       <div className="inline-add-form">
                         <input
@@ -1891,9 +1905,7 @@ function App() {
                           className="icon-button inline-add-cancel"
                           onClick={(event) => {
                             event.stopPropagation()
-                            setIsAddNeedRowOpen(false)
-                            setNewNeedName('')
-                            setNewNeedImportance(3)
+                            resetInlineNeedForm()
                           }}
                         >
                           ×
@@ -1981,7 +1993,7 @@ function App() {
               </tbody>
               <tfoot>
                 <tr className="inline-add-row">
-                  <td colSpan={technicalRequirements.length + 1} onClick={(event) => event.stopPropagation()}>
+                  <td colSpan={technicalRequirements.length + ROOF_FIXED_COLUMN_COUNT} onClick={(event) => event.stopPropagation()}>
                     {isAddRequirementRowOpen ? (
                       <div className="inline-add-form">
                         <input
@@ -2016,9 +2028,7 @@ function App() {
                           className="icon-button inline-add-cancel"
                           onClick={(event) => {
                             event.stopPropagation()
-                            setIsAddRequirementRowOpen(false)
-                            setNewRequirementName('')
-                            setNewRequirementDifficulty(3)
+                            resetInlineRequirementForm()
                           }}
                         >
                           ×
@@ -2404,7 +2414,6 @@ function App() {
           type="button"
           className={`chat-toggle-button ${isAiChatOpen ? 'active-control' : ''}`}
           onClick={() => setIsAiChatOpen((current) => !current)}
-          aria-label={isAiChatOpen ? copy.closeAiChat : copy.openAiChat}
         >
           <span aria-hidden="true">✨</span>
           <span>{copy.ai}</span>

@@ -89,6 +89,8 @@ const STORAGE_KEY = 'open-quality-house-state'
 const relationshipCycle: RelationshipStrength[] = [0, 1, 3, 9]
 const roofCycle: CorrelationStrength[] = [0, 1, 2, -1, -2]
 const maxHistoryLength = 20
+const MATRIX_FIXED_COLUMN_COUNT = 2
+const ROOF_FIXED_COLUMN_COUNT = 1
 let fallbackIdCounter = 0
 
 const translations = {
@@ -1193,8 +1195,6 @@ function App() {
     },
   }
   const activeGuideStep = guideStepContent[guideStep]
-  const MATRIX_FIXED_COLUMN_COUNT = 2
-  const ROOF_FIXED_COLUMN_COUNT = 1
 
   function resetInlineNeedForm() {
     setNewNeedName('')
@@ -1897,12 +1897,19 @@ function App() {
                             </option>
                           ))}
                         </select>
-                        <button type="button" className="icon-button inline-add-confirm" onClick={submitInlineNeed} disabled={!newNeedName.trim() || isMainLocked}>
+                        <button
+                          type="button"
+                          className="icon-button inline-add-confirm"
+                          onClick={submitInlineNeed}
+                          disabled={!newNeedName.trim() || isMainLocked}
+                          aria-label={`${copy.done} ${copy.addNeed}`}
+                        >
                           ✓
                         </button>
                         <button
                           type="button"
                           className="icon-button inline-add-cancel"
+                          aria-label={copy.close}
                           onClick={(event) => {
                             event.stopPropagation()
                             resetInlineNeedForm()
@@ -2020,12 +2027,14 @@ function App() {
                           className="icon-button inline-add-confirm"
                           onClick={submitInlineRequirement}
                           disabled={!newRequirementName.trim() || isMainLocked}
+                          aria-label={`${copy.done} ${copy.addResponse}`}
                         >
                           ✓
                         </button>
                         <button
                           type="button"
                           className="icon-button inline-add-cancel"
+                          aria-label={copy.close}
                           onClick={(event) => {
                             event.stopPropagation()
                             resetInlineRequirementForm()

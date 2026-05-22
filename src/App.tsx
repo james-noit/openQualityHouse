@@ -169,7 +169,7 @@ const translations = {
     guidedCreation: 'Guided creation',
     guidedCreationTitle: 'Guided House of Quality creation',
     guidedCreationDescription:
-      'Follow each step with practical examples while building your own House of Quality side by side.',
+      'Follow each step with practical examples while building your own House of Quality side-by-side.',
     guidedExample: 'Example',
     yourDraft: 'Your draft',
     guidedBriefText:
@@ -297,7 +297,7 @@ const translations = {
     guidedCreation: 'Creación guiada',
     guidedCreationTitle: 'Creación guiada de la Casa de la Calidad',
     guidedCreationDescription:
-      'Sigue cada paso con ejemplos prácticos mientras construyes tu propia Casa de la Calidad en paralelo.',
+      'Sigue cada paso con ejemplos prácticos mientras construyes tu propia Casa de la Calidad lado a lado.',
     guidedExample: 'Ejemplo',
     yourDraft: 'Tu borrador',
     guidedBriefText:
@@ -2763,7 +2763,7 @@ function App() {
                             <tr>
                               <th scope="col">{copy.customerNeeds}</th>
                               {technicalRequirements.map((requirement) => (
-                                <th key={`guide-matrix-${requirement.id}`} scope="col">{requirement.name}</th>
+                                <th key={`guide-matrix-head-${requirement.id}`} scope="col">{requirement.name}</th>
                               ))}
                             </tr>
                           </thead>

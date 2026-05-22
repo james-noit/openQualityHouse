@@ -77,6 +77,7 @@ type SavedState = BoardState & {
 }
 
 type EditorStep = 'brief' | 'needs' | 'requirements' | 'matrix'
+type GuideStep = EditorStep | 'interpretation'
 type HelpTopic = 'house' | 'roof' | 'needs' | 'requirements' | 'matrix' | 'correlations'
 
 type ExportedHouseFile = HouseDraft & {
@@ -88,6 +89,8 @@ const STORAGE_KEY = 'open-quality-house-state'
 const relationshipCycle: RelationshipStrength[] = [0, 1, 3, 9]
 const roofCycle: CorrelationStrength[] = [0, 1, 2, -1, -2]
 const maxHistoryLength = 20
+const MATRIX_FIXED_COLUMN_COUNT = 2
+const ROOF_FIXED_COLUMN_COUNT = 1
 let fallbackIdCounter = 0
 
 const translations = {
@@ -149,6 +152,7 @@ const translations = {
     stepNeeds: 'Customer needs',
     stepRequirements: 'Technical requirements',
     stepMatrix: 'Relationships',
+    stepInterpretation: 'Interpretation',
     previous: 'Previous',
     next: 'Next',
     close: 'Close',
@@ -164,6 +168,34 @@ const translations = {
     roofGuide: 'Capture positive and negative interactions between responses.',
     aiTitle: 'AI chatbot',
     aiDescription: 'Configure the assistant and optionally generate a first draft of the matrix.',
+    guidedCreation: 'Guided creation',
+    guidedCreationTitle: 'Guided House of Quality creation',
+    guidedCreationDescription:
+      'Follow each step with practical examples while building your own House of Quality side-by-side.',
+    guidedExample: 'Example',
+    yourDraft: 'Your draft',
+    guidedBriefText:
+      'Start by defining the project scope and a concrete problem statement that can be solved through customer and technical analysis.',
+    guidedBriefExample:
+      'Customer churn increased 18% because onboarding takes too long and support teams receive repetitive setup questions.',
+    guidedNeedsText:
+      'List measurable customer needs and set their importance from 1 to 5. Keep each need specific and outcome-focused.',
+    guidedNeedsExample:
+      'Needs: Faster first value (5), Clear setup instructions (4), Reliable handoff from sales to support (3).',
+    guidedRequirementsText:
+      'Define technical responses your team can implement. Score each response difficulty from 1 to 5 to plan effort.',
+    guidedRequirementsExample:
+      'Responses: Guided setup wizard (difficulty 3), In-app checklist telemetry (difficulty 2), Role-based templates (difficulty 4).',
+    guidedMatrixText:
+      'Score relationships between customer needs and technical responses with 0, 1, 3, or 9. Then capture positive or negative correlations in the roof.',
+    guidedMatrixExample:
+      'If “Guided setup wizard” strongly supports “Faster first value,” assign 9. If two responses compete for the same backend capacity, mark a negative roof correlation.',
+    guidedInterpretationText:
+      'Read the weighted opportunity row to prioritize high-impact responses. Combine it with difficulty and roof tradeoffs to decide what to implement first.',
+    guidedInterpretationExample:
+      'A response with high opportunity, medium difficulty, and mostly positive correlations is a good first implementation candidate.',
+    openAiChat: 'Open AI chat',
+    closeAiChat: 'Close AI chat',
     enableAssistant: 'Enable browser-side AI generation',
     model: 'Model',
     apiKey: 'API key',
@@ -248,6 +280,7 @@ const translations = {
     stepNeeds: 'Necesidades del cliente',
     stepRequirements: 'Requisitos técnicos',
     stepMatrix: 'Relaciones',
+    stepInterpretation: 'Interpretación',
     previous: 'Anterior',
     next: 'Siguiente',
     close: 'Cerrar',
@@ -263,6 +296,34 @@ const translations = {
     roofGuide: 'Registra interacciones positivas y negativas entre respuestas.',
     aiTitle: 'Chatbot de IA',
     aiDescription: 'Configura el asistente y genera opcionalmente un primer borrador de la matriz.',
+    guidedCreation: 'Creación guiada',
+    guidedCreationTitle: 'Creación guiada de la Casa de la Calidad',
+    guidedCreationDescription:
+      'Sigue cada paso con ejemplos prácticos mientras construyes tu propia Casa de la Calidad lado a lado.',
+    guidedExample: 'Ejemplo',
+    yourDraft: 'Tu borrador',
+    guidedBriefText:
+      'Empieza definiendo el alcance del proyecto y un problema concreto que pueda resolverse con análisis de cliente y técnico.',
+    guidedBriefExample:
+      'La rotación de clientes subió un 18% porque el onboarding tarda demasiado y soporte recibe dudas repetitivas de configuración.',
+    guidedNeedsText:
+      'Enumera necesidades del cliente medibles y su importancia de 1 a 5. Mantén cada necesidad específica y orientada a resultados.',
+    guidedNeedsExample:
+      'Necesidades: Lograr valor más rápido (5), Instrucciones claras de configuración (4), Traspaso confiable de ventas a soporte (3).',
+    guidedRequirementsText:
+      'Define respuestas técnicas que tu equipo pueda implementar. Puntúa la dificultad de 1 a 5 para planificar esfuerzo.',
+    guidedRequirementsExample:
+      'Respuestas: Asistente de configuración guiado (dificultad 3), Telemetría de checklist en la app (dificultad 2), Plantillas por rol (dificultad 4).',
+    guidedMatrixText:
+      'Puntúa las relaciones entre necesidades y respuestas con 0, 1, 3 o 9. Después registra correlaciones positivas o negativas en el techo.',
+    guidedMatrixExample:
+      'Si “Asistente de configuración guiado” ayuda mucho a “Lograr valor más rápido”, asigna 9. Si dos respuestas compiten por la misma capacidad backend, marca correlación negativa.',
+    guidedInterpretationText:
+      'Lee la fila de oportunidad ponderada para priorizar respuestas de alto impacto. Combínala con dificultad y compensaciones del techo para decidir qué implementar primero.',
+    guidedInterpretationExample:
+      'Una respuesta con alta oportunidad, dificultad media y correlaciones mayormente positivas es buena candidata para iniciar la implementación.',
+    openAiChat: 'Abrir chat de IA',
+    closeAiChat: 'Cerrar chat de IA',
     enableAssistant: 'Habilitar generación con IA en el navegador',
     model: 'Modelo',
     apiKey: 'Clave API',
@@ -292,31 +353,31 @@ const translations = {
   },
 } as const
 
-const providerOptions: Array<{ value: AiProvider; label: string; description: string }> = [
+const providerOptions: Array<{ value: AiProvider; label: string; icon: string }> = [
   {
     value: 'openai',
     label: 'OpenAI',
-    description: 'Fast structured ideation with GPT models.',
+    icon: '🌀',
   },
   {
     value: 'anthropic',
     label: 'Anthropic',
-    description: 'Helpful for long, requirements-heavy reasoning.',
+    icon: '🧠',
   },
   {
     value: 'gemini',
     label: 'Google Gemini',
-    description: 'Great if you already manage Google AI keys.',
+    icon: '💠',
   },
   {
     value: 'openrouter',
     label: 'OpenRouter',
-    description: 'Single API surface for multiple LLMs.',
+    icon: '🧭',
   },
   {
     value: 'other',
     label: 'Other',
-    description: 'Use any OpenAI-compatible endpoint and API key.',
+    icon: '🔌',
   },
 ]
 
@@ -893,6 +954,7 @@ function App() {
   const [aiConfig, setAiConfig] = useState(initialState.aiConfig)
   const [chatMessages, setChatMessages] = useState(initialState.chatMessages)
   const [chatInput, setChatInput] = useState('')
+  const [isAiChatOpen, setIsAiChatOpen] = useState(false)
   const [assistantStatus, setAssistantStatus] = useState('')
   const [assistantError, setAssistantError] = useState('')
   const [language, setLanguage] = useState<Language>(initialState.language)
@@ -900,15 +962,24 @@ function App() {
   const [redoStack, setRedoStack] = useState<BoardState[]>([])
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [isAiModalOpen, setIsAiModalOpen] = useState(false)
+  const [isGuideModalOpen, setIsGuideModalOpen] = useState(false)
   const [fileMenuOpen, setFileMenuOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [editorStep, setEditorStep] = useState<EditorStep>('brief')
+  const [guideStep, setGuideStep] = useState<GuideStep>('brief')
   const [isMainLocked, setIsMainLocked] = useState(false)
+  const [isAddNeedRowOpen, setIsAddNeedRowOpen] = useState(false)
+  const [newNeedName, setNewNeedName] = useState('')
+  const [newNeedImportance, setNewNeedImportance] = useState(3)
+  const [isAddRequirementRowOpen, setIsAddRequirementRowOpen] = useState(false)
+  const [newRequirementName, setNewRequirementName] = useState('')
+  const [newRequirementDifficulty, setNewRequirementDifficulty] = useState(3)
   const [activeHelp, setActiveHelp] = useState<HelpTopic | null>(null)
   const [helpPopoverPosition, setHelpPopoverPosition] = useState<{ top: number; right: number } | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const editorModalRef = useRef<HTMLDivElement | null>(null)
   const aiModalRef = useRef<HTMLDivElement | null>(null)
+  const guideModalRef = useRef<HTMLDivElement | null>(null)
   const boardRef = useRef(board)
   const chatMessagesRef = useRef(chatMessages)
   const copy = translations[language]
@@ -1023,6 +1094,50 @@ function App() {
     }
   }, [isAiModalOpen])
 
+  useEffect(() => {
+    const modal = guideModalRef.current
+    if (!isGuideModalOpen || !modal) return
+
+    const saved = document.activeElement as HTMLElement | null
+
+    const getFocusable = (): HTMLElement[] =>
+      Array.from(
+        modal.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      )
+
+    getFocusable()[0]?.focus()
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsGuideModalOpen(false)
+        return
+      }
+      if (event.key !== 'Tab') return
+
+      const items = getFocusable()
+      if (items.length === 0) return
+
+      const first = items[0]
+      const last = items[items.length - 1]
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      saved?.focus()
+    }
+  }, [isGuideModalOpen])
+
   const weightedScores = useMemo(() => {
     return technicalRequirements.reduce<Record<string, number>>((scores, requirement) => {
       scores[requirement.id] = customerNeeds.reduce((sum, need) => {
@@ -1044,6 +1159,53 @@ function App() {
     needs: copy.stepNeeds,
     requirements: copy.stepRequirements,
     matrix: copy.stepMatrix,
+  }
+  const guideSteps: GuideStep[] = ['brief', 'needs', 'requirements', 'matrix', 'interpretation']
+  const guideStepLabels: Record<GuideStep, string> = {
+    brief: copy.stepBrief,
+    needs: copy.stepNeeds,
+    requirements: copy.stepRequirements,
+    matrix: copy.stepMatrix,
+    interpretation: copy.stepInterpretation,
+  }
+  const guideStepContent: Record<GuideStep, { description: string; example: string; editorStep?: EditorStep }> = {
+    brief: {
+      description: copy.guidedBriefText,
+      example: copy.guidedBriefExample,
+      editorStep: 'brief',
+    },
+    needs: {
+      description: copy.guidedNeedsText,
+      example: copy.guidedNeedsExample,
+      editorStep: 'needs',
+    },
+    requirements: {
+      description: copy.guidedRequirementsText,
+      example: copy.guidedRequirementsExample,
+      editorStep: 'requirements',
+    },
+    matrix: {
+      description: copy.guidedMatrixText,
+      example: copy.guidedMatrixExample,
+      editorStep: 'matrix',
+    },
+    interpretation: {
+      description: copy.guidedInterpretationText,
+      example: copy.guidedInterpretationExample,
+    },
+  }
+  const activeGuideStep = guideStepContent[guideStep]
+
+  function resetInlineNeedForm() {
+    setNewNeedName('')
+    setNewNeedImportance(3)
+    setIsAddNeedRowOpen(false)
+  }
+
+  function resetInlineRequirementForm() {
+    setNewRequirementName('')
+    setNewRequirementDifficulty(3)
+    setIsAddRequirementRowOpen(false)
   }
 
   function commitBoard(
@@ -1114,28 +1276,56 @@ function App() {
     }))
   }
 
-  function addCustomerNeed() {
+  function addCustomerNeed(draft?: { name?: string; importance?: number }) {
     commitBoard((current) => ({
       ...current,
       customerNeeds: [
         ...current.customerNeeds,
-        { id: createId(), name: `Customer need ${current.customerNeeds.length + 1}`, importance: 3 },
+        {
+          id: createId(),
+          name: draft?.name?.trim() || `Customer need ${current.customerNeeds.length + 1}`,
+          importance: normalizeRating(draft?.importance ?? 3),
+        },
       ],
     }))
   }
 
-  function addTechnicalRequirement() {
+  function addTechnicalRequirement(draft?: { name?: string; difficulty?: number }) {
     commitBoard((current) => ({
       ...current,
       technicalRequirements: [
         ...current.technicalRequirements,
         {
           id: createId(),
-          name: `Technical response ${current.technicalRequirements.length + 1}`,
-          difficulty: 3,
+          name: draft?.name?.trim() || `Technical response ${current.technicalRequirements.length + 1}`,
+          difficulty: normalizeRating(draft?.difficulty ?? 3),
         },
       ],
     }))
+  }
+
+  function submitInlineNeed(event: React.MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation()
+    runIfMainUnlocked(() => {
+      const name = newNeedName.trim()
+      if (!name) {
+        return
+      }
+      addCustomerNeed({ name, importance: newNeedImportance })
+      resetInlineNeedForm()
+    })
+  }
+
+  function submitInlineRequirement(event: React.MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation()
+    runIfMainUnlocked(() => {
+      const name = newRequirementName.trim()
+      if (!name) {
+        return
+      }
+      addTechnicalRequirement({ name, difficulty: newRequirementDifficulty })
+      resetInlineRequirementForm()
+    })
   }
 
   function removeCustomerNeed(id: string) {
@@ -1327,6 +1517,11 @@ function App() {
       setEditorStep(step)
       setIsEditorOpen(true)
     })
+  }
+
+  function openGuideAt(step: GuideStep) {
+    setGuideStep(step)
+    setIsGuideModalOpen(true)
   }
 
   function createSectionKeyHandler(step: EditorStep) {
@@ -1523,6 +1718,18 @@ function App() {
         </button>
         <button
           type="button"
+          className="toolbar-button"
+          onClick={() => {
+            openGuideAt('brief')
+            setFileMenuOpen(false)
+            setMobileMenuOpen(false)
+          }}
+        >
+          <span aria-hidden="true">🧩</span>
+          <span className="button-label">{copy.guidedCreation}</span>
+        </button>
+        <button
+          type="button"
           className={`toolbar-button ${isMainLocked ? 'active-control' : ''}`}
           onClick={() => setIsMainLocked((current) => !current)}
           aria-pressed={isMainLocked}
@@ -1616,21 +1823,7 @@ function App() {
               <p className="section-tag">{copy.houseLabel}</p>
               <h2>{copy.matrixTitle}</h2>
             </div>
-            <div className="section-controls">
-              <button
-                type="button"
-                className="icon-button section-control"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  runIfMainUnlocked(addCustomerNeed)
-                }}
-                disabled={isMainLocked}
-                aria-label={copy.addNeed}
-              >
-                +
-              </button>
-              {renderHelpPopover('house', copy.houseHelpTitle, copy.houseHelpText, 'main')}
-            </div>
+            <div className="section-controls">{renderHelpPopover('house', copy.houseHelpTitle, copy.houseHelpText, 'main')}</div>
           </div>
           <p className="helper-copy">{copy.matrixHelper}</p>
           <div className="table-scroll">
@@ -1683,6 +1876,63 @@ function App() {
                   ))}
                   <td className="weighted-value">{totalOpportunity}</td>
                 </tr>
+                <tr className="inline-add-row">
+                  <td colSpan={technicalRequirements.length + MATRIX_FIXED_COLUMN_COUNT} onClick={(event) => event.stopPropagation()}>
+                    {isAddNeedRowOpen ? (
+                      <div className="inline-add-form">
+                        <input
+                          value={newNeedName}
+                          onChange={(event) => setNewNeedName(event.target.value)}
+                          placeholder={copy.needName}
+                          onClick={(event) => event.stopPropagation()}
+                        />
+                        <select
+                          value={newNeedImportance}
+                          onChange={(event) => setNewNeedImportance(normalizeRating(Number(event.target.value)))}
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          {[1, 2, 3, 4, 5].map((value) => (
+                            <option key={`need-importance-${value}`} value={value}>
+                              {copy.importance}: {value}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          className="icon-button inline-add-confirm"
+                          onClick={submitInlineNeed}
+                          disabled={!newNeedName.trim() || isMainLocked}
+                          aria-label={`${copy.done} ${copy.addNeed}`}
+                        >
+                          ✓
+                        </button>
+                        <button
+                          type="button"
+                          className="icon-button inline-add-cancel"
+                          aria-label={copy.close}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            resetInlineNeedForm()
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="table-inline-add"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          runIfMainUnlocked(() => setIsAddNeedRowOpen(true))
+                        }}
+                        disabled={isMainLocked}
+                      >
+                        + {copy.addNeed}
+                      </button>
+                    )}
+                  </td>
+                </tr>
               </tfoot>
             </table>
           </div>
@@ -1701,21 +1951,7 @@ function App() {
               <p className="section-tag">{copy.roofLabel}</p>
               <h2>{copy.roofTitle}</h2>
             </div>
-            <div className="section-controls">
-              <button
-                type="button"
-                className="icon-button section-control"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  runIfMainUnlocked(addTechnicalRequirement)
-                }}
-                disabled={isMainLocked}
-                aria-label={copy.addResponse}
-              >
-                +
-              </button>
-              {renderHelpPopover('roof', copy.roofHelpTitle, copy.roofHelpText, 'main')}
-            </div>
+            <div className="section-controls">{renderHelpPopover('roof', copy.roofHelpTitle, copy.roofHelpText, 'main')}</div>
           </div>
           <p className="helper-copy">{copy.roofHelper}</p>
           <div className="table-scroll">
@@ -1762,6 +1998,67 @@ function App() {
                   </tr>
                 ))}
               </tbody>
+              <tfoot>
+                <tr className="inline-add-row">
+                  <td colSpan={technicalRequirements.length + ROOF_FIXED_COLUMN_COUNT} onClick={(event) => event.stopPropagation()}>
+                    {isAddRequirementRowOpen ? (
+                      <div className="inline-add-form">
+                        <input
+                          value={newRequirementName}
+                          onChange={(event) => setNewRequirementName(event.target.value)}
+                          placeholder={copy.responseName}
+                          onClick={(event) => event.stopPropagation()}
+                        />
+                        <select
+                          value={newRequirementDifficulty}
+                          onChange={(event) =>
+                            setNewRequirementDifficulty(normalizeRating(Number(event.target.value)))
+                          }
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          {[1, 2, 3, 4, 5].map((value) => (
+                            <option key={`requirement-difficulty-${value}`} value={value}>
+                              {copy.difficulty}: {value}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          className="icon-button inline-add-confirm"
+                          onClick={submitInlineRequirement}
+                          disabled={!newRequirementName.trim() || isMainLocked}
+                          aria-label={`${copy.done} ${copy.addResponse}`}
+                        >
+                          ✓
+                        </button>
+                        <button
+                          type="button"
+                          className="icon-button inline-add-cancel"
+                          aria-label={copy.close}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            resetInlineRequirementForm()
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="table-inline-add"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          runIfMainUnlocked(() => setIsAddRequirementRowOpen(true))
+                        }}
+                        disabled={isMainLocked}
+                      >
+                        + {copy.addResponse}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </article>
@@ -1849,7 +2146,7 @@ function App() {
                       <p className="helper-copy">{copy.customerNeeds}</p>
                       <div className="section-controls">
                         {renderHelpPopover('needs', copy.needsHelpTitle, copy.needsHelpText, 'modal')}
-                        <button type="button" className="primary-button" onClick={addCustomerNeed}>
+                        <button type="button" className="primary-button" onClick={() => addCustomerNeed()}>
                           {copy.addNeed}
                         </button>
                       </div>
@@ -1914,7 +2211,7 @@ function App() {
                           copy.requirementsHelpText,
                           'modal',
                         )}
-                        <button type="button" className="primary-button" onClick={addTechnicalRequirement}>
+                        <button type="button" className="primary-button" onClick={() => addTechnicalRequirement()}>
                           {copy.addResponse}
                         </button>
                       </div>
@@ -2122,15 +2419,31 @@ function App() {
       ) : null}
 
       {aiConfig.enabled ? (
+        <button
+          type="button"
+          className={`chat-toggle-button ${isAiChatOpen ? 'active-control' : ''}`}
+          onClick={() => setIsAiChatOpen((current) => !current)}
+        >
+          <span aria-hidden="true">✨</span>
+          <span>{copy.ai}</span>
+        </button>
+      ) : null}
+
+      {aiConfig.enabled && isAiChatOpen ? (
         <section className="main-chatbot card" aria-label={copy.aiPopupTitle}>
           <div className="main-chatbot-header">
             <div>
               <p className="eyebrow">{copy.ai}</p>
               <h2>{copy.aiPopupTitle}</h2>
             </div>
-            <button type="button" className="ghost-button" onClick={() => setIsAiModalOpen(true)}>
-              {copy.ai}
-            </button>
+            <div className="section-controls">
+              <button type="button" className="ghost-button" onClick={() => setIsAiModalOpen(true)}>
+                {copy.ai}
+              </button>
+              <button type="button" className="icon-button section-control" onClick={() => setIsAiChatOpen(false)} aria-label={copy.closeAiChat}>
+                ×
+              </button>
+            </div>
           </div>
           <form
             className="stack-list assistant-form"
@@ -2207,8 +2520,10 @@ function App() {
                     className={`provider-pill ${aiConfig.provider === provider.value ? 'active' : ''}`}
                     onClick={() => updateProvider(provider.value)}
                   >
+                    <span className="provider-icon" aria-hidden="true">
+                      {provider.icon}
+                    </span>
                     <strong>{provider.label}</strong>
-                    <span>{provider.description}</span>
                   </button>
                 ))}
               </div>
@@ -2249,6 +2564,347 @@ function App() {
               </div>
 
               <p className="helper-copy">{copy.localOnly}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isGuideModalOpen ? (
+        <div className="modal-overlay" role="presentation" onClick={() => setIsGuideModalOpen(false)}>
+          <div
+            className="modal card guide-modal"
+            ref={guideModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="guide-dialog-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="modal-header">
+              <div>
+                <p className="eyebrow">{copy.guidedCreation}</p>
+                <h2 id="guide-dialog-title">{copy.guidedCreationTitle}</h2>
+                <p className="helper-copy">{copy.guidedCreationDescription}</p>
+              </div>
+              <button type="button" className="ghost-button" onClick={() => setIsGuideModalOpen(false)} aria-label={copy.close}>
+                {copy.close}
+              </button>
+            </div>
+
+            <div className="editor-layout">
+              <nav className="stepper" aria-label={copy.guidedCreation}>
+                {guideSteps.map((step) => (
+                  <button
+                    key={`guide-step-${step}`}
+                    type="button"
+                    className={`step-pill ${guideStep === step ? 'active' : ''}`}
+                    onClick={() => setGuideStep(step)}
+                    aria-current={guideStep === step ? 'step' : undefined}
+                  >
+                    {guideStepLabels[step]}
+                  </button>
+                ))}
+              </nav>
+              <div className="editor-content stack-list">
+                <p className="helper-copy">{activeGuideStep.description}</p>
+                {guideStep === 'brief' ? (
+                  <div className="guide-workspace">
+                    <p className="guide-example">
+                      <strong>{copy.guidedExample}:</strong> {activeGuideStep.example}
+                    </p>
+                    <div className="stack-list">
+                      <p className="summary-label">{copy.yourDraft}</p>
+                      <label>
+                        {copy.titleLabel}
+                        <input
+                          value={projectTitle}
+                          onChange={(event) =>
+                            commitBoard((current) => ({ ...current, projectTitle: event.target.value }))
+                          }
+                          placeholder={copy.titlePlaceholder}
+                        />
+                      </label>
+                      <label>
+                        {copy.problemLabel}
+                        <textarea
+                          rows={4}
+                          value={problemStatement}
+                          onChange={(event) =>
+                            commitBoard((current) => ({ ...current, problemStatement: event.target.value }))
+                          }
+                          placeholder={copy.problemPlaceholder}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                ) : null}
+                {guideStep === 'needs' ? (
+                  <div className="guide-workspace">
+                    <p className="guide-example">
+                      <strong>{copy.guidedExample}:</strong> {activeGuideStep.example}
+                    </p>
+                    <div className="stack-list">
+                      <p className="summary-label">{copy.yourDraft}</p>
+                      {customerNeeds.map((need) => (
+                        <div key={`guide-need-${need.id}`} className="item-row">
+                          <label>
+                            {copy.needName}
+                            <input
+                              value={need.name}
+                              onChange={(event) => updateNeedName(need.id, event.target.value)}
+                            />
+                          </label>
+                          <label className="compact-field">
+                            {copy.importance}
+                            <div className="rating-control">
+                              <button
+                                type="button"
+                                className="icon-button rating-button"
+                                onClick={() => updateNeedImportance(need.id, need.importance - 1)}
+                                disabled={need.importance <= 1}
+                              >
+                                −
+                              </button>
+                              <span className="rating-value">{need.importance}</span>
+                              <button
+                                type="button"
+                                className="icon-button rating-button"
+                                onClick={() => updateNeedImportance(need.id, need.importance + 1)}
+                                disabled={need.importance >= 5}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </label>
+                          <button
+                            type="button"
+                            className="icon-button"
+                            onClick={() => removeCustomerNeed(need.id)}
+                            disabled={customerNeeds.length === 1}
+                          >
+                            {copy.remove}
+                          </button>
+                        </div>
+                      ))}
+                      <button type="button" className="ghost-button" onClick={() => addCustomerNeed()}>
+                        + {copy.addNeed}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+                {guideStep === 'requirements' ? (
+                  <div className="guide-workspace">
+                    <p className="guide-example">
+                      <strong>{copy.guidedExample}:</strong> {activeGuideStep.example}
+                    </p>
+                    <div className="stack-list">
+                      <p className="summary-label">{copy.yourDraft}</p>
+                      {technicalRequirements.map((requirement) => (
+                        <div key={`guide-requirement-${requirement.id}`} className="item-row">
+                          <label>
+                            {copy.responseName}
+                            <input
+                              value={requirement.name}
+                              onChange={(event) =>
+                                updateTechnicalRequirement(requirement.id, 'name', event.target.value)
+                              }
+                            />
+                          </label>
+                          <label className="compact-field">
+                            {copy.difficulty}
+                            <div className="rating-control">
+                              <button
+                                type="button"
+                                className="icon-button rating-button"
+                                onClick={() =>
+                                  updateTechnicalRequirement(
+                                    requirement.id,
+                                    'difficulty',
+                                    requirement.difficulty - 1,
+                                  )
+                                }
+                                disabled={requirement.difficulty <= 1}
+                              >
+                                −
+                              </button>
+                              <span className="rating-value">{requirement.difficulty}</span>
+                              <button
+                                type="button"
+                                className="icon-button rating-button"
+                                onClick={() =>
+                                  updateTechnicalRequirement(
+                                    requirement.id,
+                                    'difficulty',
+                                    requirement.difficulty + 1,
+                                  )
+                                }
+                                disabled={requirement.difficulty >= 5}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </label>
+                          <button
+                            type="button"
+                            className="icon-button"
+                            onClick={() => removeTechnicalRequirement(requirement.id)}
+                            disabled={technicalRequirements.length === 1}
+                          >
+                            {copy.remove}
+                          </button>
+                        </div>
+                      ))}
+                      <button type="button" className="ghost-button" onClick={() => addTechnicalRequirement()}>
+                        + {copy.addResponse}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+                {guideStep === 'matrix' ? (
+                  <div className="guide-workspace">
+                    <p className="guide-example">
+                      <strong>{copy.guidedExample}:</strong> {activeGuideStep.example}
+                    </p>
+                    <div className="stack-list">
+                      <p className="summary-label">{copy.yourDraft}</p>
+                      <div className="table-scroll modal-table-scroll">
+                        <table className="matrix-table compact-matrix-table">
+                          <thead>
+                            <tr>
+                              <th scope="col">{copy.customerNeeds}</th>
+                              {technicalRequirements.map((requirement) => (
+                                <th key={`guide-matrix-head-${requirement.id}`} scope="col">{requirement.name}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {customerNeeds.map((need) => (
+                              <tr key={`guide-row-${need.id}`}>
+                                <th scope="row">{need.name}</th>
+                                {technicalRequirements.map((requirement) => {
+                                  const key = relationshipKey(need.id, requirement.id)
+                                  const value = matrix[key] ?? 0
+
+                                  return (
+                                    <td key={`guide-cell-${key}`}>
+                                      <button
+                                        type="button"
+                                        className={`matrix-cell strength-${value}`}
+                                        onClick={() => cycleRelationship(need.id, requirement.id)}
+                                      >
+                                        {value}
+                                      </button>
+                                    </td>
+                                  )
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="table-scroll modal-table-scroll">
+                        <table className="roof-table compact-matrix-table">
+                          <thead>
+                            <tr>
+                              <th scope="col"></th>
+                              {technicalRequirements.map((requirement) => (
+                                <th key={`guide-roof-head-${requirement.id}`} scope="col">{requirement.name}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {technicalRequirements.map((leftRequirement, rowIndex) => (
+                              <tr key={`guide-roof-row-${leftRequirement.id}`}>
+                                <th scope="row">{leftRequirement.name}</th>
+                                {technicalRequirements.map((rightRequirement, columnIndex) => {
+                                  if (columnIndex <= rowIndex) {
+                                    return <td key={rightRequirement.id} className="roof-empty" />
+                                  }
+
+                                  const key = roofKey(leftRequirement.id, rightRequirement.id)
+                                  const value = roofMatrix[key] ?? 0
+                                  const label =
+                                    value === 2
+                                      ? '++'
+                                      : value === 1
+                                        ? '+'
+                                        : value === -1
+                                          ? '−'
+                                          : value === -2
+                                            ? '−−'
+                                            : '0'
+
+                                  return (
+                                    <td key={`guide-roof-cell-${key}`}>
+                                      <button
+                                        type="button"
+                                        className={`matrix-cell roof strength-${value}`}
+                                        onClick={() => cycleRoof(leftRequirement.id, rightRequirement.id)}
+                                      >
+                                        {label}
+                                      </button>
+                                    </td>
+                                  )
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+                {guideStep === 'interpretation' ? (
+                  <div className="guide-workspace">
+                    <p className="guide-example">
+                      <strong>{copy.guidedExample}:</strong> {activeGuideStep.example}
+                    </p>
+                    <section className="overview-grid modal-overview-grid">
+                      <article className="card summary-card">
+                        <span className="summary-label">{copy.customerNeeds}</span>
+                        <strong>{customerNeeds.length}</strong>
+                      </article>
+                      <article className="card summary-card">
+                        <span className="summary-label">{copy.technicalResponses}</span>
+                        <strong>{technicalRequirements.length}</strong>
+                      </article>
+                      <article className="card summary-card accent">
+                        <span className="summary-label">{copy.weightedOpportunity}</span>
+                        <strong>{totalOpportunity}</strong>
+                      </article>
+                    </section>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => {
+                  const currentIndex = guideSteps.indexOf(guideStep)
+                  setGuideStep(guideSteps[Math.max(0, currentIndex - 1)])
+                }}
+                disabled={guideStep === guideSteps[0]}
+              >
+                {copy.previous}
+              </button>
+              {guideStep === guideSteps[guideSteps.length - 1] ? (
+                <button type="button" className="primary-button" onClick={() => setIsGuideModalOpen(false)}>
+                  {copy.done}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={() => {
+                    const currentIndex = guideSteps.indexOf(guideStep)
+                    setGuideStep(guideSteps[Math.min(guideSteps.length - 1, currentIndex + 1)])
+                  }}
+                >
+                  {copy.next}
+                </button>
+              )}
             </div>
           </div>
         </div>

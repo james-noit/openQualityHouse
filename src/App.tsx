@@ -1182,6 +1182,7 @@ function App() {
     },
   }
   const activeGuideStep = guideStepContent[guideStep]
+  const editorTarget = activeGuideStep.editorStep
 
   function commitBoard(
     update: BoardState | ((current: BoardState) => BoardState),
@@ -2450,15 +2451,11 @@ function App() {
                 <p className="guide-example">
                   <strong>{copy.guidedExample}:</strong> {activeGuideStep.example}
                 </p>
-                {activeGuideStep.editorStep ? (
+                {editorTarget ? (
                   <button
                     type="button"
                     className="primary-button"
                     onClick={() => {
-                      const editorTarget = activeGuideStep.editorStep
-                      if (!editorTarget) {
-                        return
-                      }
                       setIsGuideModalOpen(false)
                       openEditorAt(editorTarget)
                     }}
